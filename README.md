@@ -11,7 +11,7 @@ The game is one connected journey. It starts with a bench prototype that blinks 
 ## How a stage works
 
 1. **Theory.** A paged manual with diagrams, interactive widgets and check questions. It opens by itself the first time you enter a stage.
-2. **Mission.** Flash the delivered code, read the chart and the serial monitor, fix the firmware, flash again. Mission control comments on what went wrong, and the chart marks the place.
+2. **Mission.** It opens with the mission briefing, a large panel that says what was added to the rover and what must work; BRIEFING above the objectives shows it again. Flash the delivered code, read the chart and the serial monitor, fix the firmware, flash again. Mission control comments on what went wrong, and the chart marks the place.
 
 ![Theory view: a section with a diagram and a check question](docs/theory.png)
 

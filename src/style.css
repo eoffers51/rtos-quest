@@ -308,3 +308,19 @@ body.night #gl { filter: brightness(.5) saturate(.75) hue-rotate(-14deg) contras
 .tourBtn { display: flex; gap: 8px; align-items: center; } .tourBtn .sp { flex: 1; } .tourBtn .hb:disabled { opacity: .3; cursor: default; }
 .tourBtn .run { padding: 7px 14px; font-size: .82rem; }
 @media (prefers-reduced-motion: reduce) { #tourSpot, #tourCard { transition: none; } }
+
+/* ---------- mission briefing: the task description of the stage, large and in the middle ---------- */
+#brief { background: rgba(9, 6, 16, .62); z-index: 6; }
+.bbox { width: min(760px, 100%); padding: 22px 26px 16px; border-color: var(--amber); box-shadow: 0 0 0 1px rgba(255, 179, 71, .25), 0 18px 60px rgba(0, 0, 0, .6); animation: rise .25s ease-out; }
+.bhead { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
+.bhead .portrait { width: 72px; height: 72px; }
+.bhead small { font: 600 .72rem var(--display); letter-spacing: .22em; color: var(--amber); }
+.bhead h2 { margin: 4px 0 0; font: 700 1.5rem var(--display); letter-spacing: .06em; color: #fff; }
+.bcount { margin-left: auto; font: 600 .9rem var(--mono); color: var(--dim); }
+.btext { margin: 0 0 18px; font-size: 1.22rem; line-height: 1.55; color: #eef4fc; min-height: 5.6em; }
+.bdots { display: flex; gap: 6px; margin-bottom: 16px; } .bdots i { flex: 1; height: 3px; background: rgba(255, 255, 255, .14); } .bdots i.done { background: rgba(255, 179, 71, .5); } .bdots i.on { background: var(--amber); }
+.bbox .rbtn { display: flex; gap: 8px; align-items: center; } .bbox .rbtn .sp { flex: 1; } .bbox .hb:disabled { opacity: .3; cursor: default; }
+.bhint { display: block; margin-top: 12px; font-size: .72rem; letter-spacing: .06em; color: var(--dim); }
+.quest h2 .hb { float: right; padding: 2px 8px; font-size: .64rem; letter-spacing: .12em; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .bbox { animation: none; } }

@@ -174,7 +174,27 @@ function openTheory(at) {
 /* ---------- tour of the mission screen ---------- */
 // Shown by itself once: the first thing a new player sees in stage 1, before the theory opens. TOUR in the top bar replays it.
 const tour = after => { if (dlg) dlg.close(); startTour(TOUR, () => { save.tour = true; persist(); after && after(); }); };
-const brief = () => say(L.briefing);
+// The mission briefing is the task description of the stage, so it gets the middle of the screen: a large panel, one
+// point per page, with BACK and NEXT. Short remarks during play (say) stay in the small box above the chart.
+function brief() {
+  if (dlg) dlg.close();
+  const el = $('#brief'), lines = L.briefing; let i = 0;
+  const draw = () => {
+    el.innerHTML = `<div class="bbox panel"><div class="bhead"><div class="portrait" aria-hidden="true">${$('#dialog .portrait').innerHTML}</div><div><small>MISSION BRIEFING · ${L.side ? 'SIDE MISSION' : 'STAGE ' + pad2(L.id)}</small><h2>${esc(L.title.toUpperCase())}</h2></div><span class="bcount">${i + 1} / ${lines.length}</span></div>
+      <p class="btext">${esc(lines[i])}</p>
+      <div class="bdots" aria-hidden="true">${lines.map((_, k) => `<i class="${k === i ? 'on' : k < i ? 'done' : ''}"></i>`).join('')}</div>
+      <div class="rbtn"><button class="hb" id="bSkip">${i === lines.length - 1 ? 'CLOSE' : 'SKIP BRIEFING'}</button><span class="sp"></span><button class="hb" id="bBack" ${i ? '' : 'disabled'}>◀ BACK</button><button class="run" id="bNext">${i === lines.length - 1 ? 'START MISSION ▶' : 'NEXT ▶'}</button></div>
+      <small class="bhint">Space or Enter: next · BRIEFING above the objectives opens this again</small></div>`;
+    $('#bNext').onclick = () => go(1); $('#bBack').onclick = () => go(-1); $('#bSkip').onclick = close; $('#bNext').focus();
+  };
+  const go = d => { sfx.click(); if (i + d >= lines.length) return close(); i = Math.max(0, i + d); draw(); };
+  const key = e => { if (!$('#manual').hidden || !$('#journey').hidden) return;
+    if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') go(-1);
+    else if ((e.key === 'ArrowRight' || e.code === 'Space' || e.code === 'Enter') && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); go(1); } };   // on a focused button the browser already turns Space and Enter into a click
+  function close() { removeEventListener('keydown', key); el.hidden = true; el.innerHTML = ''; dlg = null; }
+  el.hidden = false; addEventListener('keydown', key); dlg = { close }; draw();
+}
+$('#reBrief').onclick = () => { sfx.click(); $('#result').hidden = true; brief(); };
 const firstVisit = () => L.id === 1 && !save.tour && !save.stars[1] && !shot;
 $('#tourBtn').onclick = () => { sfx.click(); $('#result').hidden = true; tour(); };
 
@@ -383,7 +403,7 @@ if (shot) {
   if (shot !== 'title') {
     $('#title').hidden = true; $('#hud').hidden = false; $('#tags').hidden = false; world.flyIn(0.001);
     preview(); layout();
-    if (shot === 'play') say(L.briefing);
+    if (shot === 'play') brief();
     if (shot === 'fail' || shot === 'solved') {
       if (shot === 'solved') { prog = L.solution(inherited()); editor.draw(); }
       $('#speed').value = '0'; run(shot === 'solved'); finish();

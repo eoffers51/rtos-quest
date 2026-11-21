@@ -59,7 +59,7 @@ export const H = {
   /** close the theory and read the whole briefing */
   async briefing() {
     if (!q('#manual').hidden) { q('#closeManual').click(); await sl(700); }
-    const br = []; for (let i = 0; i < 16 && !q('#dialog').hidden; i++) { q('#dialog').click(); await sl(80); br.push(q('#dtext').textContent); q('#dialog').click(); await sl(150); }
+    const br = []; for (let i = 0; i < 16 && !q('#brief').hidden; i++) { br.push(q('#brief .btext').textContent); q('#bNext').click(); await sl(120); }
     return 'briefing: ' + br.join(' // ');
   },
   async flights() { const fl = []; for (let i = 0; i < 6 && !q('#dialog').hidden; i++) { q('#dialog').click(); await sl(80); fl.push(q('#dtext').textContent); q('#dialog').click(); await sl(150); } return fl.filter((x, i, a) => !a[i + 1] || !a[i + 1].startsWith(x)).join(' // '); },
