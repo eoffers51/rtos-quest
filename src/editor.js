@@ -95,7 +95,9 @@ export function createEditor(root, L, get, changed) {
     h += tasks.length ? tasks.map(([u, i]) => {
       const dis = u.locked ? 'disabled' : '';
       return `<div class="ln" data-u="${i}">${fn(two ? 'xTaskCreatePinnedToCore' : 'xTaskCreate')}(<b style="color:${PALETTE[i % 5]}">${esc(u.name)}</b>, "${esc(u.name)}", <input type="number" min="256" max="16384" step="64" data-uk="stack" value="${u.stack}" ${dis} aria-label="stack size of ${esc(u.name)}">, NULL, <input type="number" class="sm" min="0" max="24" data-uk="prio" value="${u.prio}" ${dis} aria-label="priority of ${esc(u.name)}">, NULL${two ? `, <select data-uk="core" ${dis} aria-label="core"><option value="0" ${u.core === 0 ? 'selected' : ''}>0</option><option value="1" ${u.core === 1 ? 'selected' : ''}>1</option><option value="-1" ${u.core === -1 ? 'selected' : ''}>tskNO_AFFINITY</option></select>` : ''});${L.isNew && L.isNew(u.name) ? ' <span class="newtag">NEW</span>' : ''}</div>`;
-    }).join('') : cm('no tasks yet: press + TASK below');
+    }).join('') : cm('no tasks yet');
+    // the same action as the + TASK button under the editor, offered where a task is really created: in app_main()
+    h += `<div class="ln"><button class="ib addline" data-act="addtask" title="Adds an xTaskCreate() line here and an empty task function below">+ ${two ? 'xTaskCreatePinnedToCore' : 'xTaskCreate'}(…);  add a new task</button></div>`;
     return `<div class="unit" style="--uc:#e8f2ff"><div class="uh"><span>STARTUP CODE</span><span class="sp"></span><span class="tip">runs once, in the main task</span></div><div class="ub"><div class="fr">void app_main(void)\n{</div>${h}<div class="fr">}</div></div></div>`;
   }
 
@@ -142,6 +144,7 @@ export function createEditor(root, L, get, changed) {
     const b = e.target.closest('[data-act]');
     // clicking a line makes it the place where the next new instruction goes (right after it)
     if (!b) { const li = e.target.closest('ol.lines li[data-l]'), un = li && li.closest('.unit[data-u]'); if (un) { at[+un.dataset.u] = +li.dataset.l + 1; mark(); } return; }
+    if (b.dataset.act === 'addtask') { if (!addTask()) b.textContent = `${MAX_TASKS} tasks is all this board has room for`; return; }
     if (b.dataset.act === 'addobj') { const o = (L.startObjs ? L.startObjs() : {})[b.dataset.k]; if (o) { get().objs[b.dataset.k] = JSON.parse(JSON.stringify(o)); changed(); draw(); } return; }
     if (b.dataset.act === 'delobj') { const k = b.dataset.k, user = get().units.find(u => u.code.some(ins => Object.values(ins).includes(k))); if (user) { b.textContent = 'in use by ' + user.name; return; } if (b.dataset.arm) { delete get().objs[b.dataset.k]; changed(); draw(); } else { b.dataset.arm = 1; b.textContent = 'click again'; } return; }
     const P = get(), ui = +b.closest('.unit').dataset.u, u = P.units[ui], li = b.closest('li'), i = li ? +li.dataset.l : -1, a = b.dataset.act;
@@ -153,14 +156,17 @@ export function createEditor(root, L, get, changed) {
   });
   draw();
   // open the editor on the code this stage adds, not on firmware the player already wrote
+  const MAX_TASKS = 14;
+  /** add an empty task: its xTaskCreate() line appears in app_main() and its function at the end, which is scrolled into view */
+  function addTask() {
+    const P = get(); if (P.units.filter(u => u.kind === 'task').length >= MAX_TASKS) return false;
+    let k = 1; while (P.units.some(u => u.name === 'task' + k)) k++;
+    P.units.push(task('task' + k, 1, [])); changed(); draw(); root.lastElementChild.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return true;
+  }
   const focusNew = () => { const t = root.querySelector('.unit[data-u] .newtag'); if (t) t.closest('.unit').scrollIntoView({ block: 'start' }); };
   setTimeout(focusNew, 0);
   return {
     draw, focusNew,
-    addTask() {
-      const P = get(); if (P.units.filter(u => u.kind === 'task').length >= 14) return false;
-      let k = 1; while (P.units.some(u => u.name === 'task' + k)) k++;
-      P.units.push(task('task' + k, 1, [])); changed(); draw(); root.lastElementChild.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return true;
-    },
+    addTask,
   };
 }
