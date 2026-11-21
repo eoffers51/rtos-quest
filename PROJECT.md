@@ -26,6 +26,7 @@ src/editor.js         firmware editor; defaultInstruction() is DOM-free
 src/widgets.js        diagram kit (svg, box, arrow, note) + shared theory widgets
 src/world.js          Three.js scene
 src/main.js           game loop, save, theory pages, result screen
+src/tour.js           guided tour of the mission screen (steps are a list of selectors and texts)
 tools/verify.js       stage verifier (runs under gjs or node)
 tools/diagrams.sh     diagram layout check (headless Chromium, uses tools/diagram-audit.html)
 tools/shots.sh        screenshots for visual review

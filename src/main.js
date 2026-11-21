@@ -5,6 +5,7 @@ import { runSim, leanRam } from './kernel.js';
 import { createEditor } from './editor.js';
 import { drawTimeline, describe, autoZoom, evidenceOf, lateLight, starved, ZOOMS } from './timeline.js';
 import { sfx } from './audio.js';
+import { TOUR, startTour } from './tour.js';
 import { WIDGETS } from './widgets.js';
 import { LESSONS, JOURNEY, SIDE } from './lessons/index.js';
 
@@ -170,9 +171,15 @@ function openTheory(at) {
   const first = sections.findIndex((_, i) => !secDone(i));
   showSec(at !== undefined ? at : first < 0 ? 0 : first);
 }
+/* ---------- tour of the mission screen ---------- */
+// Shown by itself once: the first time a new player reaches the mission of stage 1, before the briefing. TOUR in the top bar replays it.
+const tour = after => { if (dlg) dlg.close(); startTour(TOUR, () => { save.tour = true; persist(); after && after(); }); };
+const brief = () => { if (L.id === 1 && !save.tour && !save.stars[1] && !shot) tour(() => say(L.briefing)); else say(L.briefing); };
+$('#tourBtn').onclick = () => { sfx.click(); $('#result').hidden = true; tour(); };
+
 function closeTheory() {
   $('#manual').hidden = true; (save.theorySeen || (save.theorySeen = {}))[L.id] = true; persist();
-  if (pendingBriefing) { pendingBriefing = false; say(L.briefing); }
+  if (pendingBriefing) { pendingBriefing = false; brief(); }
 }
 $('#manNav').onclick = e => { const b = e.target.closest('[data-s]'); if (b) { sfx.click(); showSec(+b.dataset.s); } };
 $('#manPrev').onclick = () => { sfx.click(); showSec(sec - 1); };
@@ -363,7 +370,7 @@ function begin(fast) {
     $('#title').hidden = true; $('#hud').hidden = false; $('#tags').hidden = false;
     preview(); layout(); editor.focusNew(); // the HUD was hidden until now, so the first scroll could not happen
     // theory first: a stage opens on its lesson the first time; the mission briefing follows when the learner leaves it
-    if (!(save.theorySeen || {})[L.id] && !theoryDone()) { pendingBriefing = true; openTheory(); } else say(L.briefing);
+    if (!(save.theorySeen || {})[L.id] && !theoryDone()) { pendingBriefing = true; openTheory(); } else brief();
   }, reduced || fast ? 0 : 1900);
 }
 $('#start').onclick = () => begin(false);

@@ -13,6 +13,8 @@ The game is one connected journey. It starts with a bench prototype that blinks 
 
 ![Theory view: a section with a diagram and a check question](docs/theory.png)
 
+A new player gets a one-minute tour of the mission screen in stage 1, before the first briefing. It can be skipped, and TOUR in the top bar starts it again in any stage.
+
 Each stage gives up to three stars: one for meeting all objectives, one for CPU load, one for RAM. HINT gives help in steps. SHOW SOLUTION runs the reference solution, and RESTORE MINE brings your own code back.
 
 ## Stages
