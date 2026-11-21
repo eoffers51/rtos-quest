@@ -109,3 +109,9 @@ The stages were built with a team of agents, each on a model that fits its part,
 - The simulator is a teaching model, not a cycle-accurate ESP32. Game time is 1 ms ticks, as if `CONFIG_FREERTOS_HZ=1000`; the theory says where real ESP-IDF defaults differ.
 - The complete ESP-IDF example at the end of each theory section has not been compiled with a real toolchain.
 - The layout is made for desktop. The phone layout has only been checked for stage 1.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE). You may use, copy, change and share the code, as long as the licence text stays with it.
+
+The game loads Three.js (MIT) and the JetBrains Mono and Rajdhani fonts (SIL Open Font License) from public CDNs; they are not part of this repository.
