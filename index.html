@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RTOS Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Rajdhani:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="./src/style.css">
+  <!-- Three.js straight from a CDN, so the project runs with any static file server (no build step). -->
+  <script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+  </script>
+</head>
+<body>
+  <canvas id="gl"></canvas>
+  <div id="tags" hidden>
+    <div class="tag" data-a="BEACON">BEACON <b>GPIO 2</b></div>
+    <div class="tag" data-a="HEART">HEART <b>GPIO 4</b></div>
+  </div>
+
+  <div class="hud" id="hud" hidden>
+    <header class="top panel">
+      <div class="logo">RTOS<b>QUEST</b></div>
+      <div class="mission"><small id="mNum"></small><strong id="mTitle"></strong></div>
+      <div class="steps" aria-label="Stage steps"><button class="step" id="openManual"><small>STEP 1</small>THEORY <b id="thProg"></b></button><span class="sarrow" aria-hidden="true">▸</span><span class="step on"><small>STEP 2</small>MISSION</span></div>
+      <div class="gauge"><small>CPU</small><div class="gbar"><i id="cpuBar"></i></div><span id="cpuNum">0%</span></div>
+      <div class="pmode" id="pmode"></div>
+      <div class="clock" id="clock">T+0000 ms</div>
+      <div class="stars" id="stars" aria-label="Stars earned">☆☆☆</div>
+      <button class="hb" id="openJourney">BUILD LOG</button>
+      <button class="hb" id="mute">SOUND ON</button>
+    </header>
+
+    <aside class="console panel">
+      <div class="tabs"><span class="on" id="fileName"></span></div>
+      <div class="tabbody" id="tab-code"><div id="editor"></div></div>
+      <div class="cfoot">
+        <button class="hb" id="addTask">+ TASK</button>
+        <button class="hb" id="hint">HINT</button>
+        <button class="hb" id="solve">SHOW SOLUTION</button>
+        <button class="hb hot" id="restore" hidden>RESTORE MINE</button>
+        <button class="hb" id="resetCode">RESET CODE</button>
+      </div>
+    </aside>
+
+    <section class="quest panel">
+      <h2>OBJECTIVES</h2>
+      <ul id="goals"></ul>
+    </section>
+
+    <div id="dialog" hidden aria-live="polite">
+      <div class="portrait" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><circle cx="32" cy="26" r="13" fill="none" stroke="currentColor" stroke-width="3"/><path d="M10 58c2-13 11-18 22-18s20 5 22 18" fill="none" stroke="currentColor" stroke-width="3"/><path d="M17 24a15 15 0 0 1 30 0" fill="none" stroke="currentColor" stroke-width="3"/><rect x="12" y="22" width="7" height="11" rx="3" fill="currentColor"/><path d="M15 33c0 8 6 10 13 10" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="30" cy="43" r="2.5" fill="currentColor"/></svg>
+      </div>
+      <div class="dbody"><small>FLIGHT · MISSION CONTROL</small><p id="dtext"></p><span class="dnext">▼ click or press Space</span></div>
+    </div>
+
+    <section class="deck panel">
+      <div class="deckrow">
+        <button class="run" id="run">▶ FLASH &amp; RUN</button>
+        <label>SPEED <select id="speed"><option value="0.25">SLOW</option><option value="0.5" selected>NORMAL</option><option value="2">FAST</option><option value="0">INSTANT</option></select></label>
+        <label>ZOOM <select id="zoom"><option value="auto" selected>AUTO</option><option value="1">1× (whole test)</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option><option value="16">16×</option></select></label>
+        <span class="legend"><i class="l-run"></i>Running <i class="l-ready"></i>Ready <i class="l-sleep"></i>Blocked on a delay <i class="l-block"></i>Blocked on an object</span>
+      </div>
+      <div class="tl"><div class="tll" id="tll"></div><div class="tlw" id="tlw"><div class="tli"><canvas id="cv"></canvas><div id="cur"></div></div></div></div>
+      <div class="probe" id="probe"></div>
+      <div class="serial" id="serial" aria-label="Serial monitor"><span class="d">Serial monitor. Nothing yet: press FLASH &amp; RUN and the rover's log appears here.</span></div>
+    </section>
+  </div>
+
+  <div id="title" class="overlay">
+    <div class="tbox">
+      <p class="kicker">AN ESP32 FIRMWARE GAME</p>
+      <h1>RTOS<b>QUEST</b></h1>
+      <p class="sub">Write real FreeRTOS code. A simulated kernel runs it. The rover lives or reboots.</p>
+      <p class="flow"><span><b>1 THEORY</b> learn the mechanism, with diagrams you can operate</span><span><b>2 MISSION</b> write the firmware and prove it on the rover</span></p>
+      <button class="run big" id="start">START</button>
+      <p><button class="hb" id="titleJourney">BUILD LOG: THE WHOLE JOURNEY</button></p>
+      <p class="fine">Drag to orbit · scroll to zoom · best on a desktop screen</p>
+    </div>
+  </div>
+  <div id="manual" class="overlay" role="dialog" aria-modal="true" aria-label="Theory" hidden><div class="mbox panel">
+    <div class="mhead"><div><small id="manKicker"></small><h2 id="manTitle"></h2></div><span class="mprog" id="manProg"></span><button class="hb" id="closeManual">SKIP TO THE MISSION</button></div>
+    <div class="mwrap"><nav id="manNav" aria-label="Sections"></nav><div class="manual" id="manBody"></div></div>
+    <div class="mfoot"><button class="hb" id="manPrev">← PREVIOUS</button><span id="manPos"></span><button class="run" id="manNext">NEXT SECTION →</button></div>
+  </div></div>
+  <div id="journey" class="overlay" role="dialog" aria-modal="true" aria-label="Build log" hidden><div class="mbox panel"><div class="mhead"><div><small>BUILD LOG</small><h2>TICK-1: FROM BENCH PROTOTYPE TO FLIGHT-READY</h2></div><button class="hb" id="closeJourney">CLOSE ✕</button></div><div class="manual" id="journeyBody"></div></div></div>
+  <div id="result" class="overlay" role="dialog" aria-modal="true" aria-label="Result" hidden></div>
+  <div id="banner" hidden></div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

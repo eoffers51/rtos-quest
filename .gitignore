@@ -1,0 +1,8 @@
+# generated screenshots for visual review (recreate with tools/shots.sh)
+reviews/shots/
+# scratch scripts of the stage designer
+specs/tmp-*.js
+# local files
+.DS_Store
+node_modules/
+*.log

@@ -1,0 +1,12 @@
+{
+  "name": "rtos-quest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A 3D programming game that teaches FreeRTOS on the ESP32 (ESP-IDF style): 14 connected stages and a sleep-mode side mission",
+  "scripts": {
+    "serve": "python3 tools/serve.py",
+    "verify": "node tools/verify.js",
+    "diagrams": "tools/diagrams.sh"
+  }
+}

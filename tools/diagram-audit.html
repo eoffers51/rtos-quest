@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- Measures every theory diagram in a real browser: text cut off at the edge of the drawing, text on top of other text,
+     and a box label wider than its box. Run through tools/diagrams.sh (headless Chromium). ?only=N limits it to one stage. -->
+<html><head><meta charset="utf-8"><title>running</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Rajdhani:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="../src/style.css">
+<style>body{overflow:auto;background:#0b1320} #stage{width:728px;position:static;display:block}</style></head>
+<body><div id="manBody"><section id="stage"></section></div><pre id="out"></pre>
+<script type="module">
+import { LESSONS, SIDE } from '../src/lessons/index.js';
+import { WIDGETS } from '../src/widgets.js';
+const only = +new URLSearchParams(location.search).get('only') || 0, host = document.querySelector('#stage'), res = [];
+try { await document.fonts.ready; } catch (e) { /* measure with fallback fonts */ }
+await Promise.all(['600 12px "JetBrains Mono"', '400 12px "JetBrains Mono"', '600 12px Rajdhani', '700 12px Rajdhani'].map(f => document.fonts.load(f).catch(() => 0)));
+const cut = s => s.replace(/\s+/g, ' ').trim().slice(0, 40);
+for (const L of [...LESSONS, ...SIDE]) {
+  if (only && L.id !== only) continue;
+  L.manual.forEach((m, i) => {
+    host.innerHTML = m[1];
+    // interactive widgets are drawn by code: mount each one and measure it in its starting state
+    host.querySelectorAll('[data-w]').forEach(el => { const fn = (L.widgets || {})[el.dataset.w] || WIDGETS[el.dataset.w]; try { if (fn) fn(el, L); } catch (e) { res.push(`stage ${L.id} (${L.title}) section ${i + 1} widget ${el.dataset.w}: THROWS ${e.message}`); } });
+    [...host.querySelectorAll('svg')].forEach((s, k) => {
+      const r = s.getBoundingClientRect(); if (!r.width) return;
+      const T = [...s.querySelectorAll('text')].filter(t => t.textContent.trim()), B = T.map(t => t.getBoundingClientRect()), bad = [];
+      T.forEach((t, a) => { const b = B[a]; if (b.width && (b.left < r.left - 1 || b.right > r.right + 1 || b.top < r.top - 1 || b.bottom > r.bottom + 1)) bad.push(`CUT OFF at the ${b.right > r.right + 1 ? 'right' : b.left < r.left - 1 ? 'left' : 'top or bottom'} edge: "${cut(t.textContent)}"`); });
+      for (let a = 0; a < T.length; a++) for (let b = a + 1; b < T.length; b++) { const A = B[a], C = B[b]; if (A.width && C.width && A.left < C.right - 3 && C.left < A.right - 3 && A.top < C.bottom - 3 && C.top < A.bottom - 3) bad.push(`OVERLAP: "${cut(T[a].textContent)}" and "${cut(T[b].textContent)}"`); }
+      s.querySelectorAll('g').forEach(g => { const ch = [...g.children], rcs = ch.filter(c => c.tagName === 'rect'); if (rcs.length !== 1 || !rcs[0].classList.contains('bx') || ch.some(c => c.tagName !== 'rect' && c.tagName !== 'text')) return; const rc = rcs[0]; /* only groups made by box(): one rectangle and its label */ const R = rc.getBoundingClientRect();
+        [...g.children].filter(c => c.tagName === 'text' && c.textContent.trim()).forEach(t => { const b = t.getBoundingClientRect(); if (b.left < R.left - 1 || b.right > R.right + 1) bad.push(`BOX TOO NARROW: "${cut(t.textContent)}" is ${Math.round(b.width / r.width * +s.viewBox.baseVal.width)} wide, its box ${Math.round(R.width / r.width * +s.viewBox.baseVal.width)} (viewBox units)`); }); });
+      bad.forEach(x => res.push(`stage ${L.id} (${L.title}) section ${i + 1} diagram ${k + 1} [viewBox ${s.getAttribute('viewBox')}]: ${x}`));
+    });
+  });
+}
+document.querySelector('#out').textContent = res.join('\n') + `\nDIAGRAMS: ${res.length} problem(s)`;
+document.title = 'done';
+</script></body></html>
