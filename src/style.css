@@ -36,6 +36,7 @@ small { font-size: .68rem; letter-spacing: .2em; color: var(--dim); }
 .clock { font-family: var(--mono); font-size: .82rem; color: var(--dim); min-width: 12ch; }
 .stars { font-size: 1.3rem; letter-spacing: .15em; color: var(--amber); text-shadow: 0 0 10px rgba(255, 179, 71, .6); }
 .hb { background: rgba(95, 227, 255, .08); border: 1px solid var(--edge); padding: 5px 12px; font-weight: 600; font-size: .78rem; letter-spacing: .14em; cursor: pointer; }
+.hb.chk { display: inline-flex; align-items: center; gap: 6px; } .hb.chk input { accent-color: var(--cyan); margin: 0; cursor: pointer; }
 .hb:hover { background: rgba(95, 227, 255, .2); border-color: var(--cyan); }
 
 /* ---------- firmware console ---------- */

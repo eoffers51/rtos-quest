@@ -177,7 +177,8 @@ export function createWorld(canvas) {
   const controls = new OrbitControls(camera, canvas);
   Object.assign(controls, { enableDamping: true, dampingFactor: 0.08, enablePan: false, minDistance: 7, maxDistance: 40, maxPolarAngle: Math.PI / 2 - 0.06, autoRotate: true, autoRotateSpeed: 0.35 });
   controls.target.copy(TARGET);
-  let idleFor = 0; controls.addEventListener('start', () => { controls.autoRotate = false; idleFor = 0; });
+  let idleFor = 0, mayRotate = true;   // mayRotate: the player's choice (the ROTATE box in the top bar)
+  controls.addEventListener('start', () => { controls.autoRotate = false; idleFor = 0; });
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -210,7 +211,7 @@ export function createWorld(canvas) {
       const k = 1 - Math.pow(1 - fx.fly.t, 3);
       camera.position.lerpVectors(fx.fly.from, home(), k);
       if (fx.fly.t >= 1) { fx.fly = null; controls.enabled = true; }
-    } else if (!controls.autoRotate && (idleFor += dt) > 14) controls.autoRotate = true;
+    } else if (mayRotate && !controls.autoRotate && (idleFor += dt) > 14) controls.autoRotate = true;
     controls.update();
     for (const name of ['BEACON', 'HEART']) {
       const l = parts[name]; l.level = lerp(l.level, l.on ? 1 : 0, 1 - Math.exp(-dt * 30));
@@ -252,6 +253,8 @@ export function createWorld(canvas) {
     },
     /** 0 = awake, 1 = light sleep, 2 = deep sleep: the flight computer's strip and the camera lenses go dark */
     setSleep(level) { fx.sleep = level; },
+    /** the slow turn of the camera around the rover: off keeps the view where the player left it (dragging still works) */
+    setAutoRotate(on) { mayRotate = !!on; controls.autoRotate = mayRotate; idleFor = 0; },
     setPin(name, on) { if (parts[name]) parts[name].on = !!on; },
     /** deployed (pointing up) or stowed (folded flat) */
     setAntenna(up) { fx.dishUp = !!up; },

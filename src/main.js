@@ -66,6 +66,9 @@ function drawGoals(K, res) {
     + fresh.map(i => item(L.goals[i], i)).join('') + group
     + '<li class="gsep">STARS 2 AND 3</li>' + L.bonus.map(b => `<li class="bonus ${allOk && b.ok(K) ? 'ok' : ''}">${K ? `<span class="sr">${allOk && b.ok(K) ? 'Earned: ' : 'Not earned: '}</span>` : ''}${b.label}</li>`).join('');
 }
+// scene rotation: the player's choice is kept; with reduced motion asked for it starts off
+const rot = $('#rotate'); rot.checked = save.rotate === undefined ? !reduced : !!save.rotate; world.setAutoRotate(rot.checked);
+rot.onchange = () => { save.rotate = rot.checked; persist(); world.setAutoRotate(rot.checked); };
 const muteBtn = $('#mute'); muteBtn.textContent = sfx.muted ? 'SOUND OFF' : 'SOUND ON';
 muteBtn.onclick = () => { muteBtn.textContent = sfx.toggle() ? 'SOUND OFF' : 'SOUND ON'; };
 $('#addTask').onclick = () => { sfx.click(); if (!editor.addTask()) say(['Fourteen tasks is all this board has room for.']); };
