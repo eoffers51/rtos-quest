@@ -50,7 +50,7 @@ Notes:
 - Use `tools/serve.py`, not `python3 -m http.server`. It tells the browser not to cache, so you never get an old copy of a file after an edit.
 - The page loads Three.js and two fonts from public CDNs, so the browser needs internet access.
 - The camera turns slowly around the rover. Untick ROTATE in the top bar to keep the view still; you can still drag it. The choice is remembered.
-- Progress is saved in the browser (`localStorage`). To open every stage without playing through, tick "review mode" in the BUILD LOG.
+- Progress is saved in the browser (`localStorage`). RESET ALL PROGRESS, at the bottom of the BUILD LOG, starts the journey again from stage 1 (it asks twice). To open every stage without playing through, tick "review mode" in the BUILD LOG.
 - A stage can be opened directly with `#m<number>` in the address, for example `http://localhost:8766/#m6`. The side mission is `#m101`.
 
 ## Check the project

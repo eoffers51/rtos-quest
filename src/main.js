@@ -23,7 +23,8 @@ try { Object.assign(save, JSON.parse(localStorage.getItem(KEY)) || {}); } catch 
 // Screenshot mode (tools/shots.sh): ?shot=title|play|fail|solved|manual|journey[&sec=N] puts the game straight into one state,
 // without animation and without touching saved progress, so a headless browser can capture it for visual review.
 const qs = new URLSearchParams(location.search), shot = qs.get('shot');
-const persist = () => { if (shot) return; try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } };
+let resetting = false;   // set while RESET ALL PROGRESS reloads the page: nothing may write the old save back
+const persist = () => { if (shot || resetting) return; try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) { /* ignore */ } };
 const unlocked = id => id === 1 || !!shot || !!save.free || !!(save.stars[id - 1] || save.solved[id - 1]); // save.free = review mode: every built stage is open
 const wanted = +((location.hash.match(/^#m(\d+)$/) || [])[1] || save.last || 1);
 // a locked or unknown stage in the address falls back to the furthest stage the player has opened, not to stage 1
@@ -198,6 +199,12 @@ function drawJourney() {
     return `<li class="${cur ? 'cur' : ''} ${open ? '' : 'off'}"><span class="jn">${pad2(j.id)}</span><div class="jt"><b>${j.title}</b><span>Rover gains: ${j.adds}</span><span class="jtopic">You learn: ${j.topic}</span></div>${theoryChip(j.id)}${status}${open ? `<button class="hb ${cur ? '' : 'hot'}" data-go="${j.id}">${cur ? 'PLAYING' : 'PLAY'}</button>` : ''}</li>`;
   }).join('')}</ol>${SIDE.length ? `<h3 class="jside">SIDE MISSIONS · other topics, stand-alone</h3><ol class="jlist">${SIDE.map(j => { const st = save.stars[j.id] || 0, cur = j.id === L.id;
       return `<li class="${cur ? 'cur' : ''}"><span class="jn">S${j.id - 100}</span><div class="jt"><b>${j.title}</b><span>${j.adds || ''}</span><span class="jtopic">You learn: ${j.topic}</span></div><span class="jst">${st ? '★'.repeat(st) + '☆'.repeat(3 - st) : 'READY'}</span><button class="hb ${cur ? '' : 'hot'}" data-go="${j.id}">${cur ? 'PLAYING' : 'PLAY'}</button></li>`; }).join('')}</ol>` : ''}`;
+  // start over: asked twice, because it erases every stage's stars and code
+  $('#journeyBody').insertAdjacentHTML('beforeend', `<div class="jreset"><span>Start the journey again from stage 1. This erases your stars, the firmware you wrote in every stage, the theory checks and the hints used. The SOUND and ROTATE settings stay.</span><button class="hb danger" id="resetAll">RESET ALL PROGRESS</button></div>`);
+  confirmBtn($('#resetAll'), 'ERASE EVERYTHING? CLICK AGAIN', () => {
+    try { localStorage.removeItem(KEY); if (save.rotate !== undefined) localStorage.setItem(KEY, JSON.stringify({ rotate: save.rotate })); } catch (e) { /* storage unavailable: the reload still starts clean in memory */ }
+    resetting = true; location.hash = '#m1'; location.reload();
+  });
 }
 $('#journeyBody').onchange = e => { if (e.target.id === 'freeRoam') { save.free = e.target.checked; persist(); drawJourney(); } };
 $('#journeyBody').onclick = e => { const b = e.target.closest('[data-go]'); if (!b) return; if (+b.dataset.go === L.id) $('#journey').hidden = true; else go(+b.dataset.go); };
