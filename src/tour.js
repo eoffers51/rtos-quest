@@ -4,9 +4,9 @@
 /** The steps, in the order a player meets the things they describe. `at` is a CSS selector; a step without one is a centred card. */
 export const TOUR = [
   { title: 'A quick tour of the mission screen',
-    text: 'Eleven short stops show where everything is. It takes about a minute. You can skip it now and start it again at any time with TOUR in the top bar.' },
+    text: 'Before the first lesson, eleven short stops show where everything is. It takes about a minute. You can skip it now and start it again at any time with TOUR in the top bar.' },
   { at: '.steps', title: 'Every stage has two steps',
-    text: 'STEP 1 THEORY is the manual you have just read, with its diagrams and check questions. Click it to open the manual again whenever you need it. STEP 2 MISSION is this screen: here you change the firmware and prove that it works.' },
+    text: 'STEP 1 THEORY is the manual of the stage, with diagrams and check questions. It opens by itself the first time you enter a stage, and you can click here to open it again whenever you need it. STEP 2 MISSION is this screen: here you change the firmware and prove that it works.' },
   { at: '#editor .unit:first-child', title: 'The firmware: startup code',
     text: 'The left panel is the rover\'s C file. It starts with app_main(), which runs once: it sets up the pins, creates kernel objects and creates every task with one xTaskCreate() line. The stack size and the priority of a task are edited in that line.' },
   { at: '#editor .unit[data-u="0"]', title: 'A task function',
@@ -28,7 +28,7 @@ export const TOUR = [
   { at: '.top', title: 'Top bar',
     text: 'The CPU gauge and the clock follow the run, and the stars show what this stage has earned. BUILD LOG shows the whole journey and lets you replay a stage. ROTATE stops the camera from turning; you can also drag the scene yourself. SOUND switches the sound off.' },
   { title: 'That is the whole screen',
-    text: 'Flash the code as it is first, read the chart, then change one thing at a time. Mission control will brief you now.' },
+    text: 'Every stage begins with its theory, and then mission control briefs you. In the mission, flash the code as it is first, read the chart, then change one thing at a time.' },
 ];
 
 /**

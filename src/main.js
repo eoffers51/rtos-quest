@@ -172,9 +172,10 @@ function openTheory(at) {
   showSec(at !== undefined ? at : first < 0 ? 0 : first);
 }
 /* ---------- tour of the mission screen ---------- */
-// Shown by itself once: the first time a new player reaches the mission of stage 1, before the briefing. TOUR in the top bar replays it.
+// Shown by itself once: the first thing a new player sees in stage 1, before the theory opens. TOUR in the top bar replays it.
 const tour = after => { if (dlg) dlg.close(); startTour(TOUR, () => { save.tour = true; persist(); after && after(); }); };
-const brief = () => { if (L.id === 1 && !save.tour && !save.stars[1] && !shot) tour(() => say(L.briefing)); else say(L.briefing); };
+const brief = () => say(L.briefing);
+const firstVisit = () => L.id === 1 && !save.tour && !save.stars[1] && !shot;
 $('#tourBtn').onclick = () => { sfx.click(); $('#result').hidden = true; tour(); };
 
 function closeTheory() {
@@ -370,7 +371,8 @@ function begin(fast) {
     $('#title').hidden = true; $('#hud').hidden = false; $('#tags').hidden = false;
     preview(); layout(); editor.focusNew(); // the HUD was hidden until now, so the first scroll could not happen
     // theory first: a stage opens on its lesson the first time; the mission briefing follows when the learner leaves it
-    if (!(save.theorySeen || {})[L.id] && !theoryDone()) { pendingBriefing = true; openTheory(); } else brief();
+    const enter = () => { if (!(save.theorySeen || {})[L.id] && !theoryDone()) { pendingBriefing = true; openTheory(); } else brief(); };
+    if (firstVisit()) tour(enter); else enter();   // a new player gets the tour of the screen first, then the theory, then the briefing
   }, reduced || fast ? 0 : 1900);
 }
 $('#start').onclick = () => begin(false);
