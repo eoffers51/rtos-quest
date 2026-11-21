@@ -2,6 +2,8 @@
 
 A 3D programming game that teaches FreeRTOS on the ESP32 (ESP-IDF style). You write the firmware of a Mars rover from code blocks, a simulated kernel runs it, and a timing chart shows what every task did in every millisecond.
 
+**Play it in the browser: <https://eoffers51.github.io/rtos-quest/>** (desktop browser, no install).
+
 ![Mission view: editor, rover, objectives and the timing chart](docs/mission.png)
 
 The game is one connected journey. It starts with a bench prototype that blinks two LEDs and ends with flight-ready firmware: 25 tasks on two cores. Each stage adds hardware to the rover, starts from the firmware you wrote in the stage before, and keeps checking that the older parts still work.
@@ -37,7 +39,7 @@ Each stage gives up to three stars: one for meeting all objectives, one for CPU 
 | 14 | Flight Readiness Review | Production hardening | Task watchdog, stack and heap margins, diagnostics |
 | side | Martian Night | Light sleep, deep sleep, wake-up cost | Temperature reports on a power budget |
 
-## Run the game
+## Run the game locally
 
 You need Python 3 and a current desktop browser. There is no build step and nothing to install.
 
@@ -52,7 +54,8 @@ Notes:
 - Use `tools/serve.py`, not `python3 -m http.server`. It tells the browser not to cache, so you never get an old copy of a file after an edit.
 - The page loads Three.js and two fonts from public CDNs, so the browser needs internet access.
 - The camera turns slowly around the rover. Untick ROTATE in the top bar to keep the view still; you can still drag it. The choice is remembered.
-- Progress is saved in the browser (`localStorage`). RESET ALL PROGRESS, at the bottom of the BUILD LOG, starts the journey again from stage 1 (it asks twice). To open every stage without playing through, tick "review mode" in the BUILD LOG.
+- The hosted copy at <https://eoffers51.github.io/rtos-quest/> is this repository's `main` branch served by GitHub Pages; a push updates it within a minute or two.
+- Progress is saved in the browser (`localStorage`), separately for the hosted copy and for a local one. RESET ALL PROGRESS, at the bottom of the BUILD LOG, starts the journey again from stage 1 (it asks twice). To open every stage without playing through, tick "review mode" in the BUILD LOG.
 - A stage can be opened directly with `#m<number>` in the address, for example `http://localhost:8766/#m6`. The side mission is `#m101`.
 
 ## Check the project
