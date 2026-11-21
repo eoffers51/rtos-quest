@@ -20,11 +20,17 @@ export function rowsOf(K, L) {
   return r;
 }
 
+/** does unit u run on core i (always true on one core; interrupts and timer callbacks count for core 0) */
+const onCore = (K, u, i) => K.cores < 2 || u.core === i || (u.core === undefined || u.core < 0 ? i === 0 : false);
+/** the milliseconds in which some unit on core i ran for less than 1 ms while the idle task had the rest of it */
+const briefOn = (K, i) => { const out = []; for (let t = 0; t < K.end; t++) if (K.coreTr[i][t] < 0 && K.units.some(u => u.tr[t] === 4 && onCore(K, u, i))) out.push(t); return out; };
+
 /** What every row is doing at time t, for the hover read-out. */
 export function describe(K, L, t) {
   t = Math.max(0, Math.min(K.end - 1, Math.floor(t)));
   const parts = K.units.map(u => `${u.name}: ${STATE[u.tr[t]]}`);
-  for (let i = 0; i < K.cores; i++) parts.push(`${K.cores > 1 ? 'IDLE' + i : 'IDLE task'}: ${K.coreTr[i][t] < 0 ? 'Running' : 'Ready (starved)'}`);
+  for (let i = 0; i < K.cores; i++) { const br = K.units.filter(u => u.tr[t] === 4 && onCore(K, u, i)).map(u => u.name);
+    parts.push(`${K.cores > 1 ? 'IDLE' + i : 'IDLE task'}: ${K.coreTr[i][t] < 0 ? (br.length ? `Running for the rest of this millisecond, after ${br.join(' and ')}` : 'Running') : 'Ready (starved)'}`); }
   L.pins.forEach(p => { let v = false; for (const e of K.ev) { if (e.t > t) break; if (e.k === 'pin' && e.pin === p) v = e.v; } parts.push(`${p}: ${v ? '1' : '0'}`); });
   if (L.power) parts.push(`current: ${K.cur[t] < 1 ? K.cur[t].toFixed(2) : Math.round(K.cur[t])} mA`);
   return `t = ${t} ms  ·  ` + parts.join('  ·  ');
@@ -140,6 +146,9 @@ export function drawTimeline(cv, labels, K, L, zoom = 1) {
     } else if (row.idle !== undefined) {
       const idle = Array.from(K.coreTr[row.idle], v => v < 0 ? 1 : 0);
       x.fillStyle = '#5d738c'; runs(idle, K.end, (v, a, b) => { if (v) x.fillRect(X(a), y + 5, Math.max(X(b) - X(a), 0.5), h - 11); });
+      // A task that ran for less than 1 ms took the CPU from the idle task for that moment. Cut the idle bar there,
+      // as wide as the task's tick mark, so the two rows never look as if they ran at the same time.
+      for (const t of briefOn(K, row.idle)) x.clearRect(X(t), y + 4, Math.max(pxPerMs, 2), h - 9);
       if (!idle.slice(0, K.end).some(Boolean) && K.end > 50) { x.fillStyle = '#ff8a7a'; x.fillText('never ran: nothing fed the watchdog', 6, y + 12); }
     } else if (row.power) { // supply current as a step plot on a log scale, 0.01 mA at the bottom to 300 mA at the top
       const Y = v => y + h - 4 - (Math.log10(Math.max(0.01, v)) + 2) / 4.48 * (h - 10);

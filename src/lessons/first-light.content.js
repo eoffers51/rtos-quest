@@ -104,7 +104,7 @@ export const manual = [
    <li><b>Faded low bar:</b> Ready, waiting for the CPU. Long stretches of this mean some other task is hogging the core.</li>
    <li><b>Dotted line:</b> Blocked on a delay.</li>
    <li><b>Red outline:</b> Blocked on a queue, semaphore or mutex (later missions).</li>
-   <li><b>IDLE task row:</b> filled whenever nothing else needed the CPU. This is your power budget.</li>
+   <li><b>IDLE task row:</b> filled whenever nothing else needed the CPU. This is your power budget. A thin gap in it lines up with a tick on a task row: the task ran for less than a millisecond there, and the idle task had the rest.</li>
    <li><b>Pin rows:</b> the logic level of each GPIO, like a logic analyzer channel.</li></ul>
    <p>Move the mouse over the chart to read the exact state of every row at that millisecond, and use the zoom to look at single ticks.</p>
    <p><b>What a correct chart looks like for this mission:</b> the BEACON pin is a square wave with an edge every 500 ms, and HEART has an edge every 200 ms. Each task row is a dotted line with a thin tick exactly under each edge of its own pin. The IDLE row is filled almost end to end. In the starting code you see the opposite: one solid bar, an empty IDLE row, and a fault marker at 600 ms.</p>`],
