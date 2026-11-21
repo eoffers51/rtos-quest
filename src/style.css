@@ -128,7 +128,7 @@ small { font-size: .68rem; letter-spacing: .2em; color: var(--dim); }
 .run:active { transform: translateY(1px); }
 .legend { font-family: var(--mono); font-size: .72rem; color: var(--dim); margin-left: auto; }
 .legend i { display: inline-block; width: 13px; height: 8px; margin: 0 4px 0 10px; vertical-align: -1px; }
-.l-run { background: var(--cyan); } .l-ready { background: rgba(95, 227, 255, .45); height: 4px !important; } .l-sleep { border-top: 1px dotted var(--cyan); height: 1px !important; vertical-align: 3px !important; } .l-block { border: 1px solid var(--red); }
+.l-run { background: var(--cyan); } .l-ready { background: rgba(95, 227, 255, .45); height: 4px !important; } .l-sleep { border-top: 1px dotted var(--cyan); height: 1px !important; vertical-align: 3px !important; } .l-block { border: 1px solid var(--red); } .l-idle { background: #5d738c; }
 /* late stages have twenty rows: the chart scrolls inside its panel instead of pushing the rover off the screen */
 .tl { max-height: 236px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--cyan) rgba(255, 255, 255, .08);
   display: grid; grid-template-columns: auto minmax(0, 1fr); background: rgba(4, 7, 14, .82); border: 1px solid rgba(255, 255, 255, .08); }

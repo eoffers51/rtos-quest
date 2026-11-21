@@ -30,7 +30,7 @@ export function describe(K, L, t) {
   t = Math.max(0, Math.min(K.end - 1, Math.floor(t)));
   const parts = K.units.map(u => `${u.name}: ${STATE[u.tr[t]]}`);
   for (let i = 0; i < K.cores; i++) { const br = K.units.filter(u => u.tr[t] === 4 && onCore(K, u, i)).map(u => u.name);
-    parts.push(`${K.cores > 1 ? 'IDLE' + i : 'IDLE task'}: ${K.coreTr[i][t] < 0 ? (br.length ? `Running for the rest of this millisecond, after ${br.join(' and ')}` : 'Running') : 'Ready (starved)'}`); }
+    parts.push(`${K.cores > 1 ? 'IDLE' + i : 'IDLE task'}: ${K.coreTr[i][t] < 0 ? (br.length ? `Running for the rest of this millisecond, after ${br.join(' and ')}` : 'Running') : `Ready, not running: ${K.coreTr[i][t] >= 0 && K.units[K.coreTr[i][t]] ? K.units[K.coreTr[i][t]].name + ' has the CPU' : 'the CPU is taken'}. The kernel switches straight from one task to the next; the idle task runs only when no other task is Ready`}`); }
   L.pins.forEach(p => { let v = false; for (const e of K.ev) { if (e.t > t) break; if (e.k === 'pin' && e.pin === p) v = e.v; } parts.push(`${p}: ${v ? '1' : '0'}`); });
   if (L.power) parts.push(`current: ${K.cur[t] < 1 ? K.cur[t].toFixed(2) : Math.round(K.cur[t])} mA`);
   return `t = ${t} ms  ·  ` + parts.join('  ·  ');
