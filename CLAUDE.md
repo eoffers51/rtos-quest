@@ -17,6 +17,9 @@ A 3D programming game that teaches FreeRTOS on the ESP32. The player writes the 
 - `src/widgets.js` diagram kit and interactive theory widgets · `src/world.js` 3D scene · `src/main.js` game loop · `src/editor.js`, `src/timeline.js`
 - `tools/verify.js` stage verifier · `tools/diagrams.sh` diagram layout check (headless Chromium) · `tools/shots.sh` screenshots · `specs/` stage design specs · `.claude/` agents, skills and the `build-stage` workflow
 
+## Before a larger change
+Read `PROJECT.md`: invariants, architecture, data model, how to split work between agents, and known traps. After any change to theory diagrams or widgets also run `tools/diagrams.sh`.
+
 ## Adding a stage
 Use the `build-stage` skill (or the `build-stage` workflow for a multi-agent run). The lesson contract is in `.claude/skills/build-stage/reference/lesson-contract.md`.
 

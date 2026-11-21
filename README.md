@@ -95,6 +95,7 @@ The stages were built with a team of agents, each on a model that fits its part,
 
 - The `build-stage` skill (or the `build-stage` workflow) adds the next stage. The lesson contract is in `.claude/skills/build-stage/reference/lesson-contract.md`.
 - The `embedded-learning-game` skill describes how to build a game like this for another embedded topic (protocols, timers, interrupts).
+- `PROJECT.md` is the guide for refactoring or extending the project with agents: invariants, architecture, how to split work, and the traps already hit.
 - `CLAUDE.md` holds the rules that apply to every change.
 
 ## Limits
