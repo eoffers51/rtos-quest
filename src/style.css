@@ -137,7 +137,7 @@ small { font-size: .68rem; letter-spacing: .2em; color: var(--dim); }
 .tlw { min-width: 0; overflow-x: auto; scrollbar-width: thin; }
 .tli { position: relative; width: 100%; }
 .tlw canvas { display: block; width: 100%; height: 86px; }
-.probe { font-family: var(--mono); font-size: .76rem; color: #b9cbe0; min-height: 3em; line-height: 1.5; overflow-wrap: anywhere; }
+.probe { flex: none; max-height: 7.5em; overflow-y: auto; scrollbar-width: thin; font-family: var(--mono); font-size: .76rem; color: #b9cbe0; min-height: 3em; line-height: 1.5; overflow-wrap: anywhere; }
 .tlw { scrollbar-width: auto; scrollbar-color: var(--cyan) rgba(255, 255, 255, .08); } /* the scrollbar is the cue that the chart continues sideways */
 .ln { padding: 2px 10px 2px 34px; min-height: 25px; display: block; }
 .ln.cm { min-height: 20px; margin-top: 3px; }

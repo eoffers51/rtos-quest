@@ -25,12 +25,15 @@ const onCore = (K, u, i) => K.cores < 2 || u.core === i || (u.core === undefined
 /** the milliseconds in which some unit on core i ran for less than 1 ms while the idle task had the rest of it */
 const briefOn = (K, i) => { const out = []; for (let t = 0; t < K.end; t++) if (K.coreTr[i][t] < 0 && K.units.some(u => u.tr[t] === 4 && onCore(K, u, i))) out.push(t); return out; };
 
+/* the same words as the chart legend */
+const SHORT = { 0: 'Waiting for its trigger', 1: 'Running', 2: 'Ready', 3: 'Blocked on an object', 4: 'Running under 1 ms', 5: 'Blocked on a delay', 6: 'Deep sleep' };
 /** What every row is doing at time t, for the hover read-out. */
 export function describe(K, L, t) {
   t = Math.max(0, Math.min(K.end - 1, Math.floor(t)));
-  const parts = K.units.map(u => `${u.name}: ${STATE[u.tr[t]]}`);
-  for (let i = 0; i < K.cores; i++) { const br = K.units.filter(u => u.tr[t] === 4 && onCore(K, u, i)).map(u => u.name);
-    parts.push(`${K.cores > 1 ? 'IDLE' + i : 'IDLE task'}: ${K.coreTr[i][t] < 0 ? (br.length ? `Running for the rest of this millisecond, after ${br.join(' and ')}` : 'Running') : `Ready, not running: ${K.coreTr[i][t] >= 0 && K.units[K.coreTr[i][t]] ? K.units[K.coreTr[i][t]].name + ' has the CPU' : 'the CPU is taken'}. The kernel switches straight from one task to the next; the idle task runs only when no other task is Ready`}`); }
+  // tasks are grouped by state, in a fixed order, so the line stays short however many tasks there are
+  const parts = [1, 4, 2, 3, 5, 0, 6].map(st => [st, K.units.filter(u => u.tr[t] === st).map(u => u.name)]).filter(g => g[1].length).map(([st, names]) => `${SHORT[st]}: ${names.join(', ')}`);
+  for (let i = 0; i < K.cores; i++) { const br = K.units.filter(u => u.tr[t] === 4 && onCore(K, u, i)).map(u => u.name), by = K.coreTr[i][t] >= 0 && K.units[K.coreTr[i][t]];
+    parts.push(`${K.cores > 1 ? 'IDLE' + i : 'IDLE task'}: ${K.coreTr[i][t] < 0 ? (br.length ? `Running for the rest of this millisecond, after ${br.join(' and ')}` : 'Running (no task is Ready)') : `not running (${by ? by.name + ' has the CPU' : 'the CPU is taken'})`}`); }
   L.pins.forEach(p => { let v = false; for (const e of K.ev) { if (e.t > t) break; if (e.k === 'pin' && e.pin === p) v = e.v; } parts.push(`${p}: ${v ? '1' : '0'}`); });
   if (L.power) parts.push(`current: ${K.cur[t] < 1 ? K.cur[t].toFixed(2) : Math.round(K.cur[t])} mA`);
   return `t = ${t} ms  ·  ` + parts.join('  ·  ');
