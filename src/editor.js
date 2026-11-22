@@ -108,6 +108,13 @@ export function createEditor(root, L, get, changed) {
     return `<div class="unit${folded.has('') ? ' folded' : ''}" style="--uc:#e8f2ff"><div class="uh">${foldBtn('', 'app_main()')}<span>STARTUP CODE</span><span class="sp"></span><span class="tip">${folded.has('') ? `app_main(): ${nT} task${nT === 1 ? '' : 's'}, ${nO} object${nO === 1 ? '' : 's'}` : 'runs once, in the main task'}</span></div><div class="ub"><div class="fr">void app_main(void)\n{</div>${h}<div class="fr">}</div></div></div>`;
   }
 
+  // The add list names every rover function itself, in its own group and colour, so nothing hides behind "call a function".
+  // Two of them are really heap calls (pvPortMalloc, vPortFree), so they go with the kernel calls.
+  const sigOf = f => F[f].sig || f + '()', kern = f => /pvPortMalloc|vPortFree/.test(sigOf(f));
+  const fnOpt = (f, cls) => `<option class="${cls}" value="call:${f}">${esc(sigOf(f))}</option>`, callable = L.ops.includes('call') ? L.fns : [];
+  const addOpts = (callable.some(f => !kern(f)) ? `<optgroup class="og-rover" label="ROVER FUNCTIONS (the rover's own code)">${callable.filter(f => !kern(f)).map(f => fnOpt(f, 'o-rover')).join('')}</optgroup>` : '')
+    + `<optgroup class="og-rtos" label="FREERTOS AND ESP-IDF CALLS">${L.ops.filter(o => o !== 'call').map(o => `<option class="o-rtos" value="${o}">${OPN[o]}</option>`).join('')}${callable.filter(kern).map(f => fnOpt(f, 'o-rtos')).join('')}</optgroup>`;
+
   function draw() {
     const P = get(); let h = appMain(P);
     P.units.forEach((u, ui) => {
@@ -122,7 +129,7 @@ export function createEditor(root, L, get, changed) {
       const fo = folded.has(u.name), n = u.code.length;
       h += `<div class="unit${fo ? ' folded' : ''}" data-u="${ui}" style="--uc:${col}"><div class="uh">${foldBtn(u.name, esc(u.name))}${head}${fresh}${fo ? `<span class="tip sum" title="${esc(brief(u))}">${u.kind === 'task' ? `prio ${u.prio} · stack ${u.stack} B · ` : ''}${n} line${n === 1 ? '' : 's'}: ${esc(brief(u))}</span>` : ''}<span class="sp"></span>${u.locked ? '' : u.kind === 'task' ? '<button class="ib" data-act="delunit">delete</button>' : ''}</div>
         <div class="ub"><div class="fr">${hoist ? open.replace(/\n  for \(;;\) \{$/, '') : open}</div><ol class="lines">${u.code.map((ins, li) => `<li data-l="${li}"><span class="tx">${line(ins, dis)}</span>${u.locked ? '' : '<button class="ib" data-act="up" aria-label="Move up">↑</button><button class="ib" data-act="down" aria-label="Move down">↓</button><button class="ib" data-act="del" aria-label="Delete line">✕</button>'}</li>${hoist && li === 0 ? '<li class="loopopen" aria-hidden="true">  for (;;) {</li>' : ''}`).join('')}</ol>
-        ${u.locked ? '' : `<div class="addrow"><select data-add aria-label="Add an instruction"><option value="">+ add instruction…</option>${L.ops.map(o => `<option value="${o}">${OPN[o]}</option>`).join('')}</select></div>`}
+        ${u.locked ? '' : `<div class="addrow"><select data-add aria-label="Add an instruction"><option value="">+ add instruction…</option>${addOpts}</select></div>`}
         <div class="fr">${u.kind === 'task' ? '  }\n}' : '}'}</div></div></div>`;
     });
     root.innerHTML = h; mark();
@@ -141,7 +148,7 @@ export function createEditor(root, L, get, changed) {
     if (el.dataset.o) { const o = P.objs[el.dataset.o], k = el.dataset.ok; o[k] = k === 'type' ? el.value : (k === 'auto' || k === 'lightSleep') ? el.value === '1' : Math.max(1, +el.value || 1); changed(); if (k === 'type') redraw(); return; }
     if (!uEl) return;
     const u = P.units[+uEl.dataset.u];
-    if (el.dataset.add !== undefined) { if (el.value) { const ui = +uEl.dataset.u, pos = Math.min(at[ui] === undefined ? u.code.length : at[ui], u.code.length); const ins = defIns(el.value); if (!ins) return; u.code.splice(pos, 0, ins); at[ui] = pos + 1; changed(); draw(); } return; }
+    if (el.dataset.add !== undefined) { if (el.value) { const ui = +uEl.dataset.u, pos = Math.min(at[ui] === undefined ? u.code.length : at[ui], u.code.length); const fnName = el.value.startsWith('call:') ? el.value.slice(5) : '', ins = defIns(fnName ? 'call' : el.value); if (!ins) return; if (fnName && F[fnName]) ins.fn = fnName; u.code.splice(pos, 0, ins); at[ui] = pos + 1; changed(); draw(); } return; }
     if (el.dataset.uk) { const k = el.dataset.uk, was = u.name; u[k] = k === 'name' ? (el.value.replace(/[^A-Za-z0-9_]/g, '') || 'task') : +el.value || 0; if (k === 'name' && folded.delete(was)) folded.add(u.name); changed(); if (k === 'name') redraw(); return; }
     const li = el.closest('li');
     if (li && el.dataset.k) { const ins = u.code[+li.dataset.l], k = el.dataset.k; ins[k] = (k === 'ms' || k === 'to') ? (+el.value || 0) : el.value; changed(); if (k === 'fn' || k === 'pin' || k === 'v' || k === 'g' || k === 'mode' || k === 'clear') redraw(); }

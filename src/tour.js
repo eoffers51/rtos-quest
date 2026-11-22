@@ -12,7 +12,7 @@ export const TOUR = [
   { at: '#editor .unit[data-u="0"]', title: 'A task function',
     text: 'Below app_main() each task has its own function with an endless for (;;) loop. Every line is one instruction. Change its values in the boxes, move it with the arrows and remove it with the cross. The grey comment under a call shows what it costs in CPU time and stack. The arrow at the left of the header hides the code of a task and leaves a one-line summary; HIDE ALL CODE above the editor does it for every task.' },
   { at: '#editor .unit[data-u="0"] .addrow', title: 'Add an instruction',
-    text: 'Pick an instruction from this list to add it to the task. It lands where you are working: after the line you last clicked, or in place of a line you just deleted. An amber mark shows the spot.' },
+    text: 'Pick an instruction from this list to add it to the task. The rover\'s own functions come first, in amber; FreeRTOS and ESP-IDF calls follow, in blue. It lands where you are working: after the line you last clicked, or in place of a line you just deleted. An amber mark shows the spot.' },
   { at: '#editor [data-act="addtask"]', title: 'Add a task',
     text: 'This line at the end of app_main() adds a new task: an xTaskCreate() line here and an empty task function at the bottom of the file. The + TASK button under the editor does the same.' },
   { at: '.cfoot', title: 'Help when you are stuck',
