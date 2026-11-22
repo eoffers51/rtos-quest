@@ -324,3 +324,10 @@ body.night #gl { filter: brightness(.5) saturate(.75) hue-rotate(-14deg) contras
 .quest h2 .hb { float: right; padding: 2px 8px; font-size: .64rem; letter-spacing: .12em; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .bbox { animation: none; } }
+
+/* folded task blocks in the editor */
+.unit.folded .ub { display: none; } .unit.folded .uh { border-bottom: 0; }
+.ib.fold { font-size: .9rem; padding: 0 6px; color: var(--uc, #7f97b3); }
+.uh .sum { flex: 1 1 12ch; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.unit.folded .uh .sp { display: none; }
+.tabs .sp { flex: 1; border: 0; padding: 0; } .tabs #foldAll { font-size: .62rem; padding: 3px 9px; margin: 0 8px 0 0; align-self: center; }

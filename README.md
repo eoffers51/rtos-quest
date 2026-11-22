@@ -55,6 +55,7 @@ Notes:
 - The page loads Three.js and two fonts from public CDNs, so the browser needs internet access.
 - The camera turns slowly around the rover. Untick ROTATE in the top bar to keep the view still; you can still drag it. The choice is remembered.
 - The hosted copy at <https://eoffers51.github.io/rtos-quest/> is this repository's `main` branch served by GitHub Pages; a push updates it within a minute or two.
+- In the editor, the arrow in the header of a task function hides its code and leaves a one-line summary (priority, stack, the calls in order). HIDE ALL CODE above the editor folds every task, so the whole task list fits on the screen.
 - Progress is saved in the browser (`localStorage`), separately for the hosted copy and for a local one. RESET ALL PROGRESS, at the bottom of the BUILD LOG, starts the journey again from stage 1 (it asks twice). To open every stage without playing through, tick "review mode" in the BUILD LOG.
 - A stage can be opened directly with `#m<number>` in the address, for example `http://localhost:8766/#m6`. The side mission is `#m101`.
 

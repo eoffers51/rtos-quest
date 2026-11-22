@@ -10,7 +10,7 @@ export const TOUR = [
   { at: '#editor .unit:first-child', title: 'The firmware: startup code',
     text: 'The left panel is the rover\'s C file. It starts with app_main(), which runs once: it sets up the pins, creates kernel objects and creates every task with one xTaskCreate() line. The stack size and the priority of a task are edited in that line.' },
   { at: '#editor .unit[data-u="0"]', title: 'A task function',
-    text: 'Below app_main() each task has its own function with an endless for (;;) loop. Every line is one instruction. Change its values in the boxes, move it with the arrows and remove it with the cross. The grey comment under a call shows what it costs in CPU time and stack.' },
+    text: 'Below app_main() each task has its own function with an endless for (;;) loop. Every line is one instruction. Change its values in the boxes, move it with the arrows and remove it with the cross. The grey comment under a call shows what it costs in CPU time and stack. The arrow at the left of the header hides the code of a task and leaves a one-line summary; HIDE ALL CODE above the editor does it for every task.' },
   { at: '#editor .unit[data-u="0"] .addrow', title: 'Add an instruction',
     text: 'Pick an instruction from this list to add it to the task. It lands where you are working: after the line you last clicked, or in place of a line you just deleted. An amber mark shows the spot.' },
   { at: '#editor [data-act="addtask"]', title: 'Add a task',

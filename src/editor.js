@@ -73,6 +73,12 @@ export function createEditor(root, L, get, changed) {
     return '';
   }
 
+  // Folded blocks: view state only, kept per stage for this visit. Tasks are keyed by name, the startup code by ''.
+  const folded = new Set();
+  const foldBtn = (key, what) => `<button class="ib fold" data-act="fold" aria-expanded="${!folded.has(key)}" title="${folded.has(key) ? 'Show' : 'Hide'} the code of ${what}" aria-label="${folded.has(key) ? 'Show' : 'Hide'} the code of ${what}">${folded.has(key) ? '▸' : '▾'}</button>`;
+  /** one line that stands for a folded block: what the task calls, in order */
+  const brief = u => u.code.length ? u.code.map(i => i.op === 'call' ? i.fn + '()' : OPN[i.op].replace(/[ (].*$/, '') + (i.ms ? '(' + i.ms + ')' : '')).join(' → ') : 'empty';
+
   /** app_main(): pin setup, kernel objects and one xTaskCreate line per task (stack and priority are edited here). */
   function appMain(P) {
     const two = L.cores === 2; let h = '';
@@ -98,7 +104,8 @@ export function createEditor(root, L, get, changed) {
     }).join('') : cm('no tasks yet');
     // the same action as the + TASK button under the editor, offered where a task is really created: in app_main()
     h += `<div class="ln"><button class="ib addline" data-act="addtask" title="Adds an xTaskCreate() line here and an empty task function below">+ ${two ? 'xTaskCreatePinnedToCore' : 'xTaskCreate'}(…);  add a new task</button></div>`;
-    return `<div class="unit" style="--uc:#e8f2ff"><div class="uh"><span>STARTUP CODE</span><span class="sp"></span><span class="tip">runs once, in the main task</span></div><div class="ub"><div class="fr">void app_main(void)\n{</div>${h}<div class="fr">}</div></div></div>`;
+    const nT = tasks.length, nO = on.length;
+    return `<div class="unit${folded.has('') ? ' folded' : ''}" style="--uc:#e8f2ff"><div class="uh">${foldBtn('', 'app_main()')}<span>STARTUP CODE</span><span class="sp"></span><span class="tip">${folded.has('') ? `app_main(): ${nT} task${nT === 1 ? '' : 's'}, ${nO} object${nO === 1 ? '' : 's'}` : 'runs once, in the main task'}</span></div><div class="ub"><div class="fr">void app_main(void)\n{</div>${h}<div class="fr">}</div></div></div>`;
   }
 
   function draw() {
@@ -112,7 +119,8 @@ export function createEditor(root, L, get, changed) {
       const open = u.kind === 'task' ? `static void ${esc(u.name)}(void *arg)\n{\n  for (;;) {` : u.kind === 'isr' ? `static void IRAM_ATTR ${u.name}(void *arg)\n{` : `static void ${u.name}(TimerHandle_t t)\n{`;
       // a task subscribes to the watchdog once, before its loop: when that call is the first line it is drawn above for (;;)
       const hoist = u.kind === 'task' && u.code.length && u.code[0].op === 'wdtAdd';
-      h += `<div class="unit" data-u="${ui}" style="--uc:${col}"><div class="uh">${head}${fresh}<span class="sp"></span>${u.locked ? '' : u.kind === 'task' ? '<button class="ib" data-act="delunit">delete</button>' : ''}</div>
+      const fo = folded.has(u.name), n = u.code.length;
+      h += `<div class="unit${fo ? ' folded' : ''}" data-u="${ui}" style="--uc:${col}"><div class="uh">${foldBtn(u.name, esc(u.name))}${head}${fresh}${fo ? `<span class="tip sum" title="${esc(brief(u))}">${u.kind === 'task' ? `prio ${u.prio} · stack ${u.stack} B · ` : ''}${n} line${n === 1 ? '' : 's'}: ${esc(brief(u))}</span>` : ''}<span class="sp"></span>${u.locked ? '' : u.kind === 'task' ? '<button class="ib" data-act="delunit">delete</button>' : ''}</div>
         <div class="ub"><div class="fr">${hoist ? open.replace(/\n  for \(;;\) \{$/, '') : open}</div><ol class="lines">${u.code.map((ins, li) => `<li data-l="${li}"><span class="tx">${line(ins, dis)}</span>${u.locked ? '' : '<button class="ib" data-act="up" aria-label="Move up">↑</button><button class="ib" data-act="down" aria-label="Move down">↓</button><button class="ib" data-act="del" aria-label="Delete line">✕</button>'}</li>${hoist && li === 0 ? '<li class="loopopen" aria-hidden="true">  for (;;) {</li>' : ''}`).join('')}</ol>
         ${u.locked ? '' : `<div class="addrow"><select data-add aria-label="Add an instruction"><option value="">+ add instruction…</option>${L.ops.map(o => `<option value="${o}">${OPN[o]}</option>`).join('')}</select></div>`}
         <div class="fr">${u.kind === 'task' ? '  }\n}' : '}'}</div></div></div>`;
@@ -134,7 +142,7 @@ export function createEditor(root, L, get, changed) {
     if (!uEl) return;
     const u = P.units[+uEl.dataset.u];
     if (el.dataset.add !== undefined) { if (el.value) { const ui = +uEl.dataset.u, pos = Math.min(at[ui] === undefined ? u.code.length : at[ui], u.code.length); const ins = defIns(el.value); if (!ins) return; u.code.splice(pos, 0, ins); at[ui] = pos + 1; changed(); draw(); } return; }
-    if (el.dataset.uk) { const k = el.dataset.uk; u[k] = k === 'name' ? (el.value.replace(/[^A-Za-z0-9_]/g, '') || 'task') : +el.value || 0; changed(); if (k === 'name') redraw(); return; }
+    if (el.dataset.uk) { const k = el.dataset.uk, was = u.name; u[k] = k === 'name' ? (el.value.replace(/[^A-Za-z0-9_]/g, '') || 'task') : +el.value || 0; if (k === 'name' && folded.delete(was)) folded.add(u.name); changed(); if (k === 'name') redraw(); return; }
     const li = el.closest('li');
     if (li && el.dataset.k) { const ins = u.code[+li.dataset.l], k = el.dataset.k; ins[k] = (k === 'ms' || k === 'to') ? (+el.value || 0) : el.value; changed(); if (k === 'fn' || k === 'pin' || k === 'v' || k === 'g' || k === 'mode' || k === 'clear') redraw(); }
   };
@@ -144,6 +152,7 @@ export function createEditor(root, L, get, changed) {
     const b = e.target.closest('[data-act]');
     // clicking a line makes it the place where the next new instruction goes (right after it)
     if (!b) { const li = e.target.closest('ol.lines li[data-l]'), un = li && li.closest('.unit[data-u]'); if (un) { at[+un.dataset.u] = +li.dataset.l + 1; mark(); } return; }
+    if (b.dataset.act === 'fold') { const un = b.closest('.unit'), key = un.dataset.u === undefined ? '' : get().units[+un.dataset.u].name; if (!folded.delete(key)) folded.add(key); draw(); return; }
     // the cross on an xTaskCreate() line removes the whole task, so it asks once more (the same as "delete" on the task function)
     if (b.dataset.act === 'deltask') { if (b.dataset.arm) { get().units.splice(+b.closest('.ln').dataset.u, 1); at = {}; changed(); draw(); } else { b.dataset.arm = 1; b.textContent = 'delete task? click again'; setTimeout(() => { if (b.isConnected) { delete b.dataset.arm; b.textContent = '✕'; } }, 4000); } return; }
     if (b.dataset.act === 'addtask') { if (!addTask()) b.textContent = `${MAX_TASKS} tasks is all this board has room for`; return; }
@@ -170,5 +179,8 @@ export function createEditor(root, L, get, changed) {
   return {
     draw, focusNew,
     addTask,
+    /** hide the code of every task function (the startup code stays open: it is the task list), or show everything again */
+    foldAll(on) { folded.clear(); if (on) get().units.forEach(u => folded.add(u.name)); draw(); },
+    allFolded: () => get().units.length > 0 && get().units.every(u => folded.has(u.name)),
   };
 }

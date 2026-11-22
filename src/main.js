@@ -73,6 +73,9 @@ const rot = $('#rotate'); rot.checked = save.rotate === undefined ? !reduced : !
 rot.onchange = () => { save.rotate = rot.checked; persist(); world.setAutoRotate(rot.checked); };
 const muteBtn = $('#mute'); muteBtn.textContent = sfx.muted ? 'SOUND OFF' : 'SOUND ON';
 muteBtn.onclick = () => { muteBtn.textContent = sfx.toggle() ? 'SOUND OFF' : 'SOUND ON'; };
+const foldLabel = () => { $('#foldAll').textContent = editor.allFolded() ? 'SHOW ALL CODE' : 'HIDE ALL CODE'; };
+$('#foldAll').onclick = () => { sfx.click(); editor.foldAll(!editor.allFolded()); foldLabel(); };
+$('#editor').addEventListener('click', e => { if (e.target.closest('[data-act="fold"]')) setTimeout(foldLabel, 0); });
 $('#addTask').onclick = () => { sfx.click(); if (!editor.addTask()) say(['Fourteen tasks is all this board has room for.']); };
 /** two-click confirmation for buttons that throw work away */
 function confirmBtn(btn, question, action) {
