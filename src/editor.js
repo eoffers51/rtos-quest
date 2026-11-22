@@ -51,7 +51,10 @@ export function createEditor(root, L, get, changed) {
       case 'until': return `${fn('vTaskDelayUntil')}(&amp;last_wake, pdMS_TO_TICKS(${num('ms')}));`;
       case 'busy': return `${fn('esp_rom_delay_us')}(${num('ms')} * 1000); <span class="cm">// busy-wait: spins the CPU</span>`;
       // a line inherited from an earlier stage keeps its own function in the list, or the box would show the wrong name
-      case 'call': return `${sel('fn', (L.fns.includes(ins.fn) || !F[ins.fn] ? L.fns : [ins.fn, ...L.fns]).map(f => [f, F[f].sig || f + '()']))}; <span class="cm">// ${fnInfo(F[ins.fn])}</span>`;
+      case 'call': { // the box of a call line offers the same full list as "+ add instruction": any function, or a kernel call that replaces the line
+        const fns = L.fns.includes(ins.fn) || !F[ins.fn] ? L.fns : [ins.fn, ...L.fns], o = (f, cls) => `<option class="${cls}" value="${f}" ${ins.fn === f ? 'selected' : ''}>${esc(sigOf(f))}</option>`;
+        const ops = dis ? '' : L.ops.filter(x => x !== 'call').map(x => `<option class="o-rtos" value="op:${x}">${OPN[x]}</option>`).join('');
+        return `<select data-k="fn" class="swap" ${dis} aria-label="function or instruction"><optgroup class="og-rover" label="ROVER FUNCTIONS (the rover's own code)">${fns.filter(f => !kern(f)).map(f => o(f, 'o-rover')).join('')}</optgroup><optgroup class="og-rtos" label="FREERTOS AND ESP-IDF CALLS">${ops}${fns.filter(kern).map(f => o(f, 'o-rtos')).join('')}</optgroup></select>; <span class="cm">// ${fnInfo(F[ins.fn])}</span>`; }
       case 'send': return `${fn('xQueueSend')}(${sel('q', qs)}, &amp;x, ${sel('to', TOS)});`;
       case 'recv': return `${fn('xQueueReceive')}(${sel('q', qs)}, &amp;x, ${sel('to', TOS)});`;
       case 'sendISR': return `${fn('xQueueSendFromISR')}(${sel('q', qs)}, &amp;x, &amp;woken);`;
@@ -151,6 +154,7 @@ export function createEditor(root, L, get, changed) {
     if (el.dataset.add !== undefined) { if (el.value) { const ui = +uEl.dataset.u, pos = Math.min(at[ui] === undefined ? u.code.length : at[ui], u.code.length); const fnName = el.value.startsWith('call:') ? el.value.slice(5) : '', ins = defIns(fnName ? 'call' : el.value); if (!ins) return; if (fnName && F[fnName]) ins.fn = fnName; u.code.splice(pos, 0, ins); at[ui] = pos + 1; changed(); draw(); } return; }
     if (el.dataset.uk) { const k = el.dataset.uk, was = u.name; u[k] = k === 'name' ? (el.value.replace(/[^A-Za-z0-9_]/g, '') || 'task') : +el.value || 0; if (k === 'name' && folded.delete(was)) folded.add(u.name); changed(); if (k === 'name') redraw(); return; }
     const li = el.closest('li');
+    if (li && el.dataset.k === 'fn' && el.value.startsWith('op:')) { const ins = defIns(el.value.slice(3)); if (ins) { u.code[+li.dataset.l] = ins; changed(); } draw(); return; }
     if (li && el.dataset.k) { const ins = u.code[+li.dataset.l], k = el.dataset.k; ins[k] = (k === 'ms' || k === 'to') ? (+el.value || 0) : el.value; changed(); if (k === 'fn' || k === 'pin' || k === 'v' || k === 'g' || k === 'mode' || k === 'clear') redraw(); }
   };
   root.addEventListener('change', onEdit(false));

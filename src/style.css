@@ -334,7 +334,7 @@ body.night #gl { filter: brightness(.5) saturate(.75) hue-rotate(-14deg) contras
 .tabs .sp { flex: 1; border: 0; padding: 0; } .tabs #foldAll { font-size: .62rem; padding: 3px 9px; margin: 0 8px 0 0; align-self: center; }
 
 /* add-instruction list: rover functions and kernel calls in two groups with their own colours */
-.unit select[data-add] optgroup { background: #0d1626; font-style: normal; font-weight: 700; }
-.unit select[data-add] .og-rover, .unit select[data-add] .o-rover { color: #ffb454; }
-.unit select[data-add] .og-rtos, .unit select[data-add] .o-rtos { color: #5fe3ff; }
-.unit select[data-add] option { font-weight: 400; }
+.unit select[data-add] optgroup, .unit select.swap optgroup { background: #0d1626; font-style: normal; font-weight: 700; }
+.unit select[data-add] .og-rover, .unit select[data-add] .o-rover, .unit select.swap .og-rover, .unit select.swap .o-rover { color: #ffb454; }
+.unit select[data-add] .og-rtos, .unit select[data-add] .o-rtos, .unit select.swap .og-rtos, .unit select.swap .o-rtos { color: #5fe3ff; }
+.unit select[data-add] option, .unit select.swap option { font-weight: 400; }
