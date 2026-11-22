@@ -187,13 +187,18 @@ h1 { font-size: clamp(3.4rem, 11vw, 7rem); line-height: .95; letter-spacing: .08
 .mfoot .hb:disabled { opacity: .3; cursor: default; }
 .mhead .run { font-size: .82rem; padding: 8px 18px; }
 /* the two steps of a stage, in the top bar */
-.steps { display: flex; align-items: center; gap: 8px; }
-.step { display: flex; flex-direction: column; line-height: 1.1; padding: 5px 14px; border: 1px solid var(--edge); background: rgba(95, 227, 255, .06); font: 700 .86rem var(--display); letter-spacing: .12em; color: var(--dim); }
-.step small { font-size: .6rem; letter-spacing: .2em; color: inherit; }
-button.step { cursor: pointer; color: var(--cyan); border-color: var(--cyan); background: rgba(95, 227, 255, .14); box-shadow: 0 0 14px rgba(95, 227, 255, .25); }
-button.step:hover { background: rgba(95, 227, 255, .28); }
-button.step.done { color: var(--green); border-color: var(--green); background: rgba(109, 255, 168, .1); box-shadow: none; }
-.step.on { color: var(--ink); border-color: var(--amber); }
+.steps { display: flex; align-items: stretch; gap: 0; }
+.step { display: flex; align-items: center; gap: 10px; min-width: 150px; padding: 6px 16px 6px 10px; border: 1px solid var(--edge); background: rgba(10, 16, 28, .72); font: 700 .86rem var(--display); letter-spacing: .14em; color: var(--dim); text-align: left; }
+.step .snum { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid currentColor; display: grid; place-items: center; font: 700 .8rem var(--display); font-style: normal; letter-spacing: 0; }
+.step .sl { display: flex; flex-direction: column; gap: 2px; line-height: 1.1; min-width: 0; }
+.step small { font: 600 .56rem var(--display); letter-spacing: .18em; color: inherit; opacity: .8; white-space: nowrap; }
+.step .sbar { display: block; height: 3px; width: 100%; min-width: 84px; background: rgba(95, 227, 255, .18); margin-top: 2px; } .step .sbar i { display: block; height: 100%; width: 0; background: currentColor; transition: width .3s; }
+.sarrow { align-self: center; width: 22px; height: 2px; background: linear-gradient(90deg, var(--cyan), var(--amber)); opacity: .7; }
+button.step { cursor: pointer; color: var(--cyan); border-color: rgba(95, 227, 255, .7); transition: background .15s, box-shadow .15s; }
+button.step:hover, button.step:focus-visible { background: rgba(95, 227, 255, .16); box-shadow: 0 0 14px rgba(95, 227, 255, .3); }
+button.step.done { color: var(--green); border-color: rgba(109, 255, 168, .7); } button.step.done .sbar { background: rgba(109, 255, 168, .18); }
+button.step.done:hover { background: rgba(109, 255, 168, .12); box-shadow: 0 0 14px rgba(109, 255, 168, .25); }
+.step.on { color: var(--amber); border-color: var(--amber); background: rgba(255, 180, 84, .1); box-shadow: inset 0 -3px 0 var(--amber); } .step.on .st { color: var(--ink); } .step.on .snum { background: var(--amber); color: #1a1206; border-color: var(--amber); }
 .sarrow { color: var(--dim); }
 #manBody { flex: 1; overflow-y: auto; padding: 6px 26px 30px; font-size: .98rem; scrollbar-width: thin; scrollbar-color: var(--edge) transparent; }
 #manBody section { max-width: 800px; margin: 0 auto; padding-top: 18px; }

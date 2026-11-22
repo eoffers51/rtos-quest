@@ -133,7 +133,7 @@ let sec = 0, pendingBriefing = false;
 const secDone = i => quizzes[i] ? !!theory()[i] : !!readMap()[i];
 function drawTheory() {
   const n = answered(), done = theoryDone();
-  $('#thProg').textContent = done ? '✓' : `${n}/${nQuiz}`; $('#openManual').classList.toggle('done', done);
+  $('#thProg').textContent = done ? 'DONE' : `${n} OF ${nQuiz} CHECKS`; $('#thBar').style.width = (nQuiz ? Math.round(n / nQuiz * 100) : 100) + '%'; $('#openManual .snum').textContent = done ? '✓' : '1'; $('#openManual').classList.toggle('done', done);
   $('#manProg').textContent = done ? 'ALL CHECKS PASSED ✓' : `CHECKS ${n}/${nQuiz}`; $('#manProg').classList.toggle('done', done);
   $('#closeManual').textContent = done ? 'GO TO THE MISSION ▶' : 'SKIP TO THE MISSION';
   $('#closeManual').classList.toggle('run', done); $('#closeManual').classList.toggle('hb', !done);
