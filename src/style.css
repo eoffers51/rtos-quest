@@ -164,7 +164,8 @@ small { font-size: .68rem; letter-spacing: .2em; color: var(--dim); }
 .kicker { letter-spacing: .5em; font-size: .8rem; color: var(--cyan); margin: 0; }
 h1 { font-size: clamp(3.4rem, 11vw, 7rem); line-height: .95; letter-spacing: .08em; margin: 10px 0 14px; font-weight: 700; text-shadow: 0 0 40px rgba(255, 179, 71, .35); }
 .sub { font-size: 1.2rem; color: #d5e2f2; margin: 0 0 30px; }
-.flow { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 0 0 26px !important; } .flow span { border: 1px solid var(--edge); background: rgba(9, 13, 24, .7); padding: 8px 14px; font-size: .92rem; color: #d5e2f2; max-width: 250px; text-align: left; } .flow b { display: block; color: var(--cyan); letter-spacing: .14em; }
+.flowhead { margin: 18px 0 8px !important; font: 700 .72rem var(--display); letter-spacing: .26em; color: var(--amber); }
+.flow { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 0 0 26px !important; } .flowarrow { color: var(--amber); font-style: normal; font-size: 1.1rem; } .flow span { border: 1px solid var(--edge); background: rgba(9, 13, 24, .7); padding: 8px 14px; font-size: .92rem; color: #d5e2f2; max-width: 250px; text-align: left; } .flow b { display: block; color: var(--cyan); letter-spacing: .14em; }
 .run.big { font-size: 1.15rem; padding: 14px 40px; animation: pulse 2s infinite; }
 @keyframes pulse { 50% { box-shadow: 0 0 44px rgba(255, 154, 46, .85); } }
 .fine { margin-top: 26px; font-size: .78rem; letter-spacing: .14em; color: var(--dim); }
