@@ -118,7 +118,8 @@ small { font-size: .68rem; letter-spacing: .2em; color: var(--dim); }
 @keyframes blink { 50% { opacity: .25; } }
 
 /* ---------- run deck ---------- */
-.deck { grid-column: 2 / 4; grid-row: 3; padding: 12px 14px 12px 18px; display: flex; flex-direction: column; gap: 9px; }
+.deck { grid-column: 2 / 4; grid-row: 3; padding: 12px 14px 12px 18px; display: flex; flex-direction: column; gap: 9px; max-height: 66vh; }
+.deck > .tl { flex: 0 1 auto; min-height: 84px; } .deck > .deckrow { flex: none; }
 .deckrow { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; }
 .deckrow label { font-size: .72rem; letter-spacing: .16em; color: var(--dim); display: flex; gap: 8px; align-items: center; }
 .deckrow select { background: #14263a; border: 1px solid #2f4c66; padding: 4px 6px; font-weight: 600; font-size: .78rem; letter-spacing: .1em; }
@@ -137,7 +138,7 @@ small { font-size: .68rem; letter-spacing: .2em; color: var(--dim); }
 .tlw { min-width: 0; overflow-x: auto; scrollbar-width: thin; }
 .tli { position: relative; width: 100%; }
 .tlw canvas { display: block; width: 100%; height: 86px; }
-.probe { flex: none; max-height: 7.5em; overflow-y: auto; scrollbar-width: thin; font-family: var(--mono); font-size: .76rem; color: #b9cbe0; min-height: 3em; line-height: 1.5; overflow-wrap: anywhere; }
+.probe { flex: none; height: 4.5em; overflow-y: auto; scrollbar-width: thin; font-family: var(--mono); font-size: .76rem; color: #b9cbe0; line-height: 1.5; overflow-wrap: anywhere; }
 .tlw { scrollbar-width: auto; scrollbar-color: var(--cyan) rgba(255, 255, 255, .08); } /* the scrollbar is the cue that the chart continues sideways */
 .ln { padding: 2px 10px 2px 34px; min-height: 25px; display: block; }
 .ln.cm { min-height: 20px; margin-top: 3px; }
@@ -145,7 +146,7 @@ small { font-size: .68rem; letter-spacing: .2em; color: var(--dim); }
 .tip { font-family: var(--mono); font-size: .64rem; letter-spacing: 0; color: #6f86a1; }
 .hb.hot { border-color: var(--cyan); color: var(--cyan); background: rgba(95, 227, 255, .12); }
 #cur { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--amber); box-shadow: 0 0 8px var(--amber); pointer-events: none; }
-.serial { font-family: var(--mono); font-size: .78rem; line-height: 1.5; height: 96px; overflow-y: auto; background: rgba(4, 7, 14, .82); border: 1px solid rgba(255, 255, 255, .08); padding: 6px 9px; white-space: pre-wrap; overflow-wrap: anywhere; color: #b9cbe0; scrollbar-width: thin; }
+.serial { font-family: var(--mono); font-size: .78rem; line-height: 1.5; height: 96px; flex: none; overflow-y: auto; background: rgba(4, 7, 14, .92); border: 1px solid rgba(255, 255, 255, .2); padding: 6px 9px; white-space: pre-wrap; overflow-wrap: anywhere; color: #b9cbe0; scrollbar-width: thin; }
 .serial .e { color: #ff8a7a; } .serial .o { color: var(--green); } .serial .d { color: #6f86a1; }
 
 /* ---------- world-space callouts ---------- */
@@ -287,7 +288,7 @@ body.shake .hud { animation: shake .09s 8; }
   #gl { height: 30vh; }
   .hud { position: relative; inset: auto; margin-top: 30vh; display: flex; flex-direction: column; background: #0a0d18; padding-bottom: 76px; }
   .quest { order: 1; max-height: none; } .console { order: 2; } .deck { order: 3; } .top { order: 0; padding: 6px 12px; gap: 6px 14px; } .gauge { margin-left: 0; } .gbar { width: 80px; }
-  .deck { backdrop-filter: none; -webkit-backdrop-filter: none; clip-path: none; } .hud { animation: none; } /* both would trap the fixed button inside the panel */
+  .deck { backdrop-filter: none; -webkit-backdrop-filter: none; clip-path: none; max-height: none; } .hud { animation: none; } /* both would trap the fixed button inside the panel */
   #run { position: fixed; left: 12px; right: 12px; bottom: 10px; z-index: 4; padding: 14px; font-size: 1rem; text-align: center; }
   #dialog { order: 1; }
   .console { max-height: 70vh; } .legend { margin-left: 0; }
