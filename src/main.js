@@ -3,7 +3,7 @@
 import { createWorld } from './world.js';
 import { runSim, leanRam } from './kernel.js';
 import { createEditor } from './editor.js';
-import { drawTimeline, describe, autoZoom, evidenceOf, lateLight, starved, ZOOMS } from './timeline.js';
+import { drawTimeline, describe, stateAt, autoZoom, evidenceOf, lateLight, starved, ZOOMS } from './timeline.js';
 import { sfx } from './audio.js';
 import { TOUR, startTour } from './tour.js';
 import { WIDGETS } from './widgets.js';
@@ -274,6 +274,7 @@ function setClock(t, K) {
   const nc = K.coreTr.length; let best = 0; for (let k = 0; k < nc; k++) { let n = 0; for (let i = a; i < b; i++) if (K.coreTr[k][i] >= 0) n++; best = Math.max(best, n); } busy = best;
   const load = b > a ? busy / (b - a) : 0;
   if (L.power) { const c = K.cur[Math.min(K.end - 1, Math.floor(t))] || 0; $('#pmode').textContent = c < 0.1 ? 'DEEP SLEEP' : c < 5 ? 'LIGHT SLEEP' : c > 100 ? 'RADIO ON' : 'ACTIVE'; $('#pmode').dataset.m = c < 5 ? 'low' : c > 100 ? 'hot' : ''; world.setSleep(c < 0.1 ? 2 : c < 5 ? 1 : 0); }
+  if (L.fsm) { const tt = Math.min(K.end - 1, Math.floor(t)), lv = key => { let v = 0; for (const e of (K.w.rv || {})[key] || []) { if (e.t > tt) break; v = e.on; } return v; }; editor.fsmState(stateAt(K, L, tt)); world.setMotion(lv('mot'), lv('dr')); }
   world.setCpu(load); $('#cpuBar').style.width = load * 100 + '%'; $('#cpuBar').classList.toggle('hot', load > 0.9); $('#cpuNum').textContent = Math.round(load * 100) + '%';
 }
 function applyEvents(upto) {
@@ -367,7 +368,7 @@ function showResult(K, stars, tasks, demo) {
 $('#run').onclick = run;
 
 /* ---------- frame loop ---------- */
-const tags = [...document.querySelectorAll('.tag')];
+const tags = [...document.querySelectorAll('.tag')].filter(t => { const used = L.pins.includes(t.dataset.a); if (!used) t.style.display = 'none'; return used; });   /* a mission without status lights shows no pin labels */
 let last = performance.now();
 function frame(now) {
   const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = Math.max(last, now);

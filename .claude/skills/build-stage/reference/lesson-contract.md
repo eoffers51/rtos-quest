@@ -72,6 +72,15 @@ Setting `power: true` on the lesson adds a current row to the chart and average 
 - **Measuring**: `K.m.avgmA`, `K.cur[t]`, `K.w.reports` (times of delivered readings), `K.w.boots`, `K.w.sleeps`, `K.w.lightMs`.
 - Bonus stars for a power lesson are usually two average-current targets instead of `B(cpu, ram)`: `bonus: [{ label, ok: K => K.m.avgmA <= n }, ...]`.
 
+## State machines (lessons with an `fsm` field)
+A lesson with `fsm: { states, events, actions, init, queue, script }` gets a table-driven state machine (side mission 102 is the pattern).
+- **Instruction**: `fs(rows)` = `{ op: 'fsm', rows }`, with `row(state, event, action, next)`; `action` is a key of `F` or `''`. It dispatches the event last received with `rc(queue)`: the first row matching the current state and the event runs its action as an ordinary call, and the state changes when the action returns. No matching row means the event is ignored. The op is not offered in `ops`: the starting code carries it and the player edits its rows.
+- **Editor**: the instruction is drawn as `switch (state)` with one `if (ev == E) { action(); state = N; }` line per row, plus a state diagram of the same table. During playback the current state is lit.
+- **Events**: `script: [{ t, ev }]` is posted into `queue` by the kernel (as an ISR or another task would); a rover function may post one with `K.post(ev)`. A full queue drops the event and logs a fault.
+- **Chart**: rows `events`, `state`, `wheels`, `drill` are added. `stateAt(K, L, t)` in `timeline.js` gives the state at a time.
+- **Measuring**: `K.w.fsm.tr` = one record per dispatched event `{ t, tq, from, ev, to, act, hit }` (`tq` = arrival time, `hit` = a row matched); `K.w.evs` = every event posted; `K.w.rv` = the rover body (`mot`, `dr` on/off logs, `smp` drilled, `rep` reported, `hz` hazard times).
+- **Rover functions**: `startMotors`, `stopMotors`, `startDrill` (returns at once, `DRILL_DONE` 400 ms later), `drillSample` (blocks 400 ms), `retractDrill`, `sendReport`.
+
 ## Reachability
 The player can add tasks and instructions, but cannot add kernel objects. Every object the reference solution or an `alts` entry uses (queue, semaphore, mutex, timer, `pm`) must already be in `start()`, in its naive configuration. If a bonus star is meant to be reachable by a second design, declare that design in `alts` so the verifier proves it.
 

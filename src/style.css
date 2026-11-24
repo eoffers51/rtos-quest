@@ -344,3 +344,17 @@ body.night #gl { filter: brightness(.5) saturate(.75) hue-rotate(-14deg) contras
 .unit select[data-add] .og-rover, .unit select[data-add] .o-rover, .unit select.swap .og-rover, .unit select.swap .o-rover { color: #ffb454; }
 .unit select[data-add] .og-rtos, .unit select[data-add] .o-rtos, .unit select.swap .og-rtos, .unit select.swap .o-rtos { color: #5fe3ff; }
 .unit select[data-add] option, .unit select.swap option { font-weight: 400; }
+
+/* state machine table in the editor: a switch with one editable line per transition, and its state diagram */
+li.fsmli { display: block; } li.fsmli > .tx { display: block; }
+.fsm { margin: 2px 0 4px; } .fsm .fl { white-space: pre-wrap; line-height: 1.9; } .fsm .kw { color: #b39bff; }
+.fsm .fcase { padding-left: 2ch; border-left: 3px solid transparent; margin-left: -3px; } .fsm .fcase b { color: var(--amber); }
+.fsm .fcase.cur { border-left-color: var(--green); background: rgba(109, 255, 168, .1); } .fsm .fcase.cur b { color: var(--green); }
+.fsm .frow { padding-left: 2ch; white-space: nowrap; font-size: .7rem; } .fsm .frow select { font-size: .7rem; } .fsm .fnote { display: block; padding-left: 2ch; line-height: 1.3; margin-bottom: 3px; white-space: normal; } .fsm .frow.dup { opacity: .55; }
+.fsm .frow .ib[data-act=fsmdel] { margin-left: 6px; }
+.fsm select[data-fk=a] { color: #ffb454; } .fsm select[data-fk=n] { color: var(--amber); font-weight: 600; } .fsm select[data-fk=e] { color: var(--cyan); }
+.fsmdia { margin: 8px 0 2px; padding: 6px 8px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(9, 13, 24, .6); } .fsmdia svg { display: block; width: 100%; max-width: 560px; height: auto; margin: 2px auto 0; }
+.fsmdia .fe { stroke: #7f97b3; stroke-width: 1.4; } .fsmdia marker path { fill: #7f97b3; } .fsmdia .ft { fill: #5fe3ff; font: 600 10px var(--mono); }
+.fsmdia .fn-node rect { fill: #14263a; stroke: #5d738c; stroke-width: 1.5; } .fsmdia .fn-node text { fill: #e8f2ff; font: 700 12px var(--display); letter-spacing: .1em; } .fsmdia .fn-node .fs { fill: #7f97b3; font: 400 8.5px var(--mono); letter-spacing: 0; }
+.fsmdia .fn-node.cur rect { fill: rgba(109, 255, 168, .22); stroke: var(--green); stroke-width: 2.5; } .fsmdia .fn-node.cur text { fill: var(--green); }
+.fsm select { padding: 1px 2px; } .fsm select[data-fk=e] { width: 13.5ch; } .fsm select[data-fk=a] { width: 18ch; } .fsm select[data-fk=n] { width: 11.5ch; }

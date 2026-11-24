@@ -106,6 +106,9 @@ function buildRover(scene) {
       const w = mesh(wheelGeo, dark, x, 0.5, side * 1.36, rover); mesh(hubGeo, metal, 0, 0, 0, w); parts.wheels.push(w);
     }
   }
+  // sampling drill at the front (state machine mission): hidden until that mission uses it
+  parts.drill = mesh(new THREE.CylinderGeometry(0.07, 0.03, 1.3, 6), metal, 1.72, 0.9, 0, rover); parts.drill.visible = false;
+  mesh(new THREE.BoxGeometry(0.3, 0.16, 0.3), mat('#e2562f'), 0, 0.6, 0, parts.drill);
   // camera mast
   parts.mastPole = mesh(new THREE.CylinderGeometry(0.07, 0.1, 1.5, 6), metal, 1.05, 2.45, 0.45, rover);
   parts.head = new THREE.Group(); parts.head.position.set(1.05, 3.3, 0.45); rover.add(parts.head);
@@ -223,6 +226,8 @@ export function createWorld(canvas) {
     parts.head.rotation.y = Math.sin(fx.time * 0.4) * 0.5; // the cameras look around
     // drive, camera and radio activity, pulsed by the firmware
     const turn = fx.spin * (1 - Math.exp(-dt * 6)); fx.spin -= turn; for (const w of parts.wheels) w.rotation.z -= turn;
+    if (fx.drive) for (const w of parts.wheels) w.rotation.z -= dt * 5;
+    if (parts.drill.visible) { parts.drill.position.y = lerp(parts.drill.position.y, fx.drill ? 0.2 : 0.9, 1 - Math.exp(-dt * 7)); if (fx.drill) parts.drill.rotation.y += dt * 22; }
     fx.cam = Math.max(0, fx.cam - dt * 2.5); parts.lensMat.emissiveIntensity = fx.sleep === 2 ? 0 : 0.9 + fx.cam * 9;
     fx.mast = Math.max(0, fx.mast - dt * 6); parts.mastPole.scale.set(1 + fx.mast * 0.5, 1, 1 + fx.mast * 0.5); // spectrometer sample: the mast pulses
     fx.radio = Math.max(0, fx.radio - dt * 4); parts.radioMat.emissiveIntensity = 0.1 + fx.radio * 8;
@@ -256,6 +261,8 @@ export function createWorld(canvas) {
     /** the slow turn of the camera around the rover: off keeps the view where the player left it (dragging still works) */
     setAutoRotate(on) { mayRotate = !!on; controls.autoRotate = mayRotate; idleFor = 0; },
     setPin(name, on) { if (parts[name]) parts[name].on = !!on; },
+    /** state machine mission: wheels turning steadily, drill lowered under the rover */
+    setMotion(wheels, drill) { fx.drive = !!wheels; fx.drill = !!drill; parts.drill.visible = true; },
     /** deployed (pointing up) or stowed (folded flat) */
     setAntenna(up) { fx.dishUp = !!up; },
     /** Show the hardware the rover has at this stage of the journey. Stage 1 is a bench prototype on stands. */
@@ -268,7 +275,7 @@ export function createWorld(canvas) {
     /** A rover function ran: show it on the hardware. */
     pulse(kind) { if (kind === 'bump') fx.crash = Math.max(fx.crash, 0.35); else if (kind === 'wheel') fx.spin += 0.35; else if (kind === 'cam') fx.cam = 1; else if (kind === 'radio') fx.radio = 1; else if (kind === 'mast') fx.mast = 1; },
     setCpu(load) { fx.cpu = clamp(load, 0, 1); },
-    reset() { parts.BEACON.on = parts.HEART.on = false; fx.cpu = 0; fx.crash = 0; fx.sleep = 0; fx.dishUp = false; },
+    reset() { fx.drive = false; fx.drill = false; parts.BEACON.on = parts.HEART.on = false; fx.cpu = 0; fx.crash = 0; fx.sleep = 0; fx.dishUp = false; },
     crash() { fx.crash = 1; parts.BEACON.on = parts.HEART.on = false; },
     celebrate() {
       fx.joy = 1; sparks.material.opacity = 1;

@@ -16,6 +16,7 @@ export function rowsOf(K, L) {
   L.pins.forEach(p => r.push({ label: p + ' pin', pin: p, h: ROW }));
   if (L.power) r.push({ label: 'current, mA', power: true, h: ROW * 4 });
   for (const k in L.irqs || {}) r.push({ label: 'IRQ ' + k, mark: 'irq:' + k, h: ROW });
+  if (L.fsm) r.push({ label: 'events', evs: true, h: ROW + 6 }, { label: 'state', fsm: true, h: ROW + 4 }, { label: 'wheels', sig: 'mot', h: ROW }, { label: 'drill', sig: 'dr', h: ROW });
   r.push({ label: 'faults', mark: '!', h: ROW });
   return r;
 }
@@ -25,6 +26,11 @@ const onCore = (K, u, i) => K.cores < 2 || u.core === i || (u.core === undefined
 /** the milliseconds in which some unit on core i ran for less than 1 ms while the idle task had the rest of it */
 const briefOn = (K, i) => { const out = []; for (let t = 0; t < K.end; t++) if (K.coreTr[i][t] < 0 && K.units.some(u => u.tr[t] === 4 && onCore(K, u, i))) out.push(t); return out; };
 
+/** the state machine's state at time t, and the bands [state, from, to] it went through */
+export const stateAt = (K, L, t) => { let st = L.fsm.init; for (const e of K.ev) { if (e.t > t) break; if (e.k === 'fsm') st = e.s; } return st; };
+const bands = (K, L) => { const out = []; let st = L.fsm.init, a = 0; for (const e of K.ev) if (e.k === 'fsm') { out.push([st, a, e.t]); st = e.s; a = e.t; } out.push([st, a, K.end]); return out; };
+const sigAt = (K, key, t) => { let v = 0; for (const e of (K.w.rv || {})[key] || []) { if (e.t > t) break; v = e.on; } return v; };
+export const FSM_COL = ['#5d738c', '#5fe3ff', '#ffb347', '#ff5d4d'];
 /* the same words as the chart legend */
 const SHORT = { 0: 'Waiting for its trigger', 1: 'Running', 2: 'Ready', 3: 'Blocked on an object', 4: 'Running under 1 ms', 5: 'Blocked on a delay', 6: 'Deep sleep' };
 /** What every row is doing at time t, for the hover read-out. */
@@ -34,6 +40,7 @@ export function describe(K, L, t) {
   const parts = [1, 4, 2, 3, 5, 0, 6].map(st => [st, K.units.filter(u => u.tr[t] === st).map(u => u.name)]).filter(g => g[1].length).map(([st, names]) => `${SHORT[st]}: ${names.join(', ')}`);
   for (let i = 0; i < K.cores; i++) { const br = K.units.filter(u => u.tr[t] === 4 && onCore(K, u, i)).map(u => u.name), by = K.coreTr[i][t] >= 0 && K.units[K.coreTr[i][t]];
     parts.push(`${K.cores > 1 ? 'IDLE' + i : 'IDLE task'}: ${K.coreTr[i][t] < 0 ? (br.length ? `Running for the rest of this millisecond, after ${br.join(' and ')}` : 'Running (no task is Ready)') : `not running (${by ? by.name + ' has the CPU' : 'the CPU is taken'})`}`); }
+  if (L.fsm) { const now = (K.w.evs || []).filter(e => e.t === t).map(e => e.ev); parts.push(`state: ${stateAt(K, L, t)}`); if (now.length) parts.push(`event arrives: ${now.join(', ')}`); parts.push(`wheels: ${sigAt(K, 'mot', t) ? 'turning' : 'stopped'}`, `drill: ${sigAt(K, 'dr', t) ? 'in the ground' : 'up'}`); }
   L.pins.forEach(p => { let v = false; for (const e of K.ev) { if (e.t > t) break; if (e.k === 'pin' && e.pin === p) v = e.v; } parts.push(`${p}: ${v ? '1' : '0'}`); });
   if (L.power) parts.push(`current: ${K.cur[t] < 1 ? K.cur[t].toFixed(2) : Math.round(K.cur[t])} mA`);
   return `t = ${t} ms  ·  ` + parts.join('  ·  ');
@@ -162,6 +169,19 @@ export function drawTimeline(cv, labels, K, L, zoom = 1) {
       for (const m of L.powerMarks || []) { x.strokeStyle = '#ffb347'; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(0, Y(m) + 0.5); x.lineTo(W, Y(m) + 0.5); x.stroke(); x.setLineDash([]); x.fillStyle = '#ffb347'; x.fillText(`budget ${m} mA`, W - 96, Y(m) - 3); }
       const avg = K.m.avgmA; x.strokeStyle = '#ffffff'; x.setLineDash([2, 3]); x.beginPath(); x.moveTo(0, Y(avg) + 0.5); x.lineTo(W, Y(avg) + 0.5); x.stroke(); x.setLineDash([]);
       x.fillStyle = '#ffffff'; x.font = 'bold 11px "JetBrains Mono", monospace'; x.fillText(`average ${avg} mA`, W / 2 - 50, Y(avg) - 4); x.font = '10px "JetBrains Mono", monospace';
+    } else if (row.fsm) { // the state as coloured bands, named where there is room
+      for (const [st, a, b] of bands(K, L)) { const x0 = X(a), w = X(b) - x0, col = FSM_COL[Math.max(0, L.fsm.states.indexOf(st)) % 4];
+        x.globalAlpha = 0.3; x.fillStyle = col; x.fillRect(x0, y + 3, Math.max(w, 1), h - 7); x.globalAlpha = 1; x.fillStyle = col; x.fillRect(x0, y + 3, Math.max(w, 1), 2); x.fillRect(x0, y + 3, 1.5, h - 7);
+        if (w > st.length * 6.4 + 8) { x.fillStyle = '#e8f2ff'; x.fillText(st, x0 + 5, y + h - 8); } }
+    } else if (row.evs) { // one tick per event, named where the next one is far enough away
+      const E = K.w.evs || [];
+      E.forEach((e, i) => { const px = X(e.t), hz = e.ev === 'HAZARD', short = e.ev.replace('CMD_', ''), room = (i + 1 < E.length ? X(E[i + 1].t) : W) - px;
+        x.fillStyle = hz ? '#ff5d4d' : e.ev === 'DRILL_DONE' ? '#6dffa8' : '#ffb347'; x.fillRect(px, y + 3, 2, h - 6);
+        if (room > short.length * 6.2 + 8) x.fillText(short, px + 5, y + h - 8); });
+    } else if (row.sig) { // wheels and drill as a level: high while on
+      const log = (K.w.rv || {})[row.sig] || []; x.strokeStyle = row.sig === 'mot' ? '#5fe3ff' : '#ffb347'; x.lineWidth = 1.5; x.beginPath(); let lvl = 0; x.moveTo(0, y + h - 5);
+      for (const e of log) { x.lineTo(X(e.t), lvl ? y + 4 : y + h - 5); lvl = e.on; x.lineTo(X(e.t), lvl ? y + 4 : y + h - 5); }
+      x.lineTo(X(K.end), lvl ? y + 4 : y + h - 5); x.stroke(); x.lineWidth = 1;
     } else if (row.pin) {
       x.strokeStyle = '#ffd27a'; x.lineWidth = 1.5; x.beginPath(); let lvl = false; x.moveTo(0, y + h - 5);
       for (const e of K.ev) if (e.k === 'pin' && e.pin === row.pin) { x.lineTo(X(e.t), lvl ? y + 4 : y + h - 5); lvl = e.v; x.lineTo(X(e.t), lvl ? y + 4 : y + h - 5); }

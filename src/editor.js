@@ -5,7 +5,7 @@ import { F, fnInfo, g, d, un, bz, c, tk, gv, gi, sn, rc, si, trs, tst, wt, ds, n
 export const PALETTE = ['#5fe3ff', '#ff8ad8', '#ffb347', '#6dffa8', '#b39bff'];
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const TOS = [[0, '0'], [10, 'pdMS_TO_TICKS(10)'], [50, 'pdMS_TO_TICKS(50)'], [100, 'pdMS_TO_TICKS(100)'], [300, 'pdMS_TO_TICKS(300)'], [-1, 'portMAX_DELAY']];
-const OPN = { gpio: 'gpio_set_level(pin, level)', call: 'call a rover function', delay: 'vTaskDelay', until: 'vTaskDelayUntil', busy: 'esp_rom_delay_us (busy-wait)', send: 'xQueueSend', recv: 'xQueueReceive', take: 'xSemaphoreTake', give: 'xSemaphoreGive', giveISR: 'xSemaphoreGiveFromISR', sendISR: 'xQueueSendFromISR', tReset: 'xTimerReset', tStop: 'xTimerStop', wakeTimer: 'esp_sleep_enable_timer_wakeup', deepSleep: 'esp_deep_sleep_start', notifyGive: 'xTaskNotifyGive', notifyGiveISR: 'vTaskNotifyGiveFromISR', notifyTake: 'ulTaskNotifyTake', evSet: 'xEventGroupSetBits', evWait: 'xEventGroupWaitBits', wdtAdd: 'esp_task_wdt_add', wdtReset: 'esp_task_wdt_reset' };
+const OPN = { gpio: 'gpio_set_level(pin, level)', call: 'call a rover function', delay: 'vTaskDelay', until: 'vTaskDelayUntil', busy: 'esp_rom_delay_us (busy-wait)', send: 'xQueueSend', recv: 'xQueueReceive', take: 'xSemaphoreTake', give: 'xSemaphoreGive', giveISR: 'xSemaphoreGiveFromISR', sendISR: 'xQueueSendFromISR', tReset: 'xTimerReset', tStop: 'xTimerStop', wakeTimer: 'esp_sleep_enable_timer_wakeup', deepSleep: 'esp_deep_sleep_start', notifyGive: 'xTaskNotifyGive', notifyGiveISR: 'vTaskNotifyGiveFromISR', notifyTake: 'ulTaskNotifyTake', evSet: 'xEventGroupSetBits', evWait: 'xEventGroupWaitBits', wdtAdd: 'esp_task_wdt_add', wdtReset: 'esp_task_wdt_reset', fsm: 'switch (state)' };
 const fn = t => `<span class="fn">${t}</span>`, cm = t => `<div class="ln cm">// ${t}</div>`;
 
 /**
@@ -55,8 +55,9 @@ export function createEditor(root, L, get, changed) {
         const fns = L.fns.includes(ins.fn) || !F[ins.fn] ? L.fns : [ins.fn, ...L.fns], o = (f, cls) => `<option class="${cls}" value="${f}" ${ins.fn === f ? 'selected' : ''}>${esc(sigOf(f))}</option>`;
         const ops = dis ? '' : L.ops.filter(x => x !== 'call').map(x => `<option class="o-rtos" value="op:${x}">${OPN[x]}</option>`).join('');
         return `<select data-k="fn" class="swap" ${dis} aria-label="function or instruction"><optgroup class="og-rover" label="ROVER FUNCTIONS (the rover's own code)">${fns.filter(f => !kern(f)).map(f => o(f, 'o-rover')).join('')}</optgroup><optgroup class="og-rtos" label="FREERTOS AND ESP-IDF CALLS">${ops}${fns.filter(kern).map(f => o(f, 'o-rtos')).join('')}</optgroup></select>; <span class="cm">// ${fnInfo(F[ins.fn])}</span>`; }
+      case 'fsm': return fsmBlock(ins, dis);
       case 'send': return `${fn('xQueueSend')}(${sel('q', qs)}, &amp;x, ${sel('to', TOS)});`;
-      case 'recv': return `${fn('xQueueReceive')}(${sel('q', qs)}, &amp;x, ${sel('to', TOS)});`;
+      case 'recv': return `${fn('xQueueReceive')}(${sel('q', qs)}, &amp;${L.fsm ? 'ev' : 'x'}, ${sel('to', TOS)});`;
       case 'sendISR': return `${fn('xQueueSendFromISR')}(${sel('q', qs)}, &amp;x, &amp;woken);`;
       case 'take': return `${fn('xSemaphoreTake')}(${sel('s', sems)}, ${sel('to', TOS)});`;
       case 'give': return `${fn('xSemaphoreGive')}(${sel('s', sems)});`;
@@ -74,6 +75,48 @@ export function createEditor(root, L, get, changed) {
       case 'deepSleep': return `${fn('esp_deep_sleep_start')}(); <span class="cm">// powers down; wake-up is a reset</span>`;
     }
     return '';
+  }
+
+  /**
+   * A state machine instruction, drawn as the C switch it stands for. Every state is a case; every table row is one
+   * "if (ev == E) { action(); state = N; }" line that the player edits. Under it, the same table as a state diagram.
+   */
+  function fsmBlock(ins, dis) {
+    const M = L.fsm, rows = ins.rows || [];
+    const pick = (i, k, opts, label) => `<select data-fk="${k}" ${dis} aria-label="${label}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${rows[i][k] === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+    let h = `<div class="fsm"><div class="fl">${fn('switch')} (state) {</div>`;
+    M.states.forEach(st => {
+      const mine = rows.map((r, i) => [r, i]).filter(x => x[0].s === st), seen = new Set();
+      h += `<div class="fl fcase" data-st="${st}">case <b>${st}</b>:</div>`;
+      if (!mine.length) h += `<div class="fl frow cm">/* no transition: every event is ignored in ${st} */</div>`;
+      mine.forEach(([r, i], k) => {
+        const dup = seen.has(r.e); seen.add(r.e); const stay = !r.a && r.n === st;
+        h += `<div class="fl frow${dup ? ' dup' : ''}" data-r="${i}"><span class="kw">if</span> (ev == ${pick(i, 'e', M.events.map(e => [e, e]), 'event')}) { ${pick(i, 'a', [['', '/* no action */'], ...M.actions.map(a => [a, a + '();'])], 'action')} state = ${pick(i, 'n', M.states.map(x => [x, x]), 'next state')}; }`
+          + `${dis ? '' : `<button class="ib" data-act="fsmdel" aria-label="Delete this transition" title="Delete this transition">✕</button>`}${dup || stay || (r.a && F[r.a] && F[r.a].wait) ? `<span class="cm fnote">// ${dup ? 'never reached: this event already has a row above' : stay ? 'stay: this event is ignored on purpose' : F[r.a].waitTxt || 'blocks'}</span>` : ''}</div>`;
+      });
+      if (!dis) h += `<div class="fl frow"><button class="ib addline" data-act="fsmadd" data-s="${st}" title="Add a transition out of ${st}">+ transition in ${st}</button></div>`;
+      h += `<div class="fl frow kw">break;</div>`;
+    });
+    return h + `<div class="fl">}</div>${fsmDiagram(rows)}</div>`;
+  }
+  /** the table as a diagram: one arrow per pair of states, labelled with the events that take it */
+  function fsmDiagram(rows) {
+    const M = L.fsm, W = 520, H = 250, bw = 104, bh = 34;
+    const pos = [[W / 2, 30], [78, 125], [W - 78, 125], [W / 2, 220]], P = Object.fromEntries(M.states.map((st, i) => [st, pos[i % 4]]));
+    const edges = {}, stay = {};
+    rows.forEach(r => { if (!P[r.s] || !P[r.n]) return; if (r.s === r.n) (stay[r.s] = stay[r.s] || []).push(r.e); else (edges[r.s + '>' + r.n] = edges[r.s + '>' + r.n] || []).push(r.e); });
+    let g = '';
+    for (const k in edges) {
+      const [a, b] = k.split('>'), [x1, y1] = P[a], [x2, y2] = P[b], dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len, off = edges[b + '>' + a] ? 9 : 0;
+      // start and end on the box edges, shifted sideways when the pair has arrows in both directions
+      const cut = (ux, uy) => Math.min(Math.abs(ux) > 0.001 ? (bw / 2 + 3) / Math.abs(ux) : 1e9, Math.abs(uy) > 0.001 ? (bh / 2 + 3) / Math.abs(uy) : 1e9), c = cut(dx / len, dy / len);
+      const sx = x1 + dx / len * c + nx * off, sy = y1 + dy / len * c + ny * off, ex = x2 - dx / len * c + nx * off, ey = y2 - dy / len * c + ny * off, mx = (sx + ex) / 2 + nx * 9, my = (sy + ey) / 2 + ny * 9;
+      const txt = edges[k].map(e => e.replace('CMD_', '')).join(', ');
+      g += `<line class="fe" x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" marker-end="url(#fsmAh)"/><text class="ft" x="${mx.toFixed(1)}" y="${(my + 3).toFixed(1)}" text-anchor="${Math.abs(nx) < 0.3 ? 'middle' : nx * (off || 1) > 0 ? 'start' : 'end'}">${esc(txt)}</text>`;
+    }
+    M.states.forEach(st => { const [x, y] = P[st];
+      g += `<g class="fn-node" data-node="${st}"><rect x="${x - bw / 2}" y="${y - bh / 2}" width="${bw}" height="${bh}" rx="6"/><text x="${x}" y="${y + (stay[st] ? 0 : 4)}" text-anchor="middle">${st}</text>${stay[st] ? `<text class="fs" x="${x}" y="${y + 12}" text-anchor="middle">stays on ${stay[st].length} event${stay[st].length > 1 ? 's' : ''}</text>` : ''}</g>`; });
+    return `<div class="fsmdia"><div class="cm">// the same table as a state diagram (CMD_ left out of the labels); the bright box is the current state during a run</div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="State diagram of the table"><defs><marker id="fsmAh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>${g}</svg></div>`;
   }
 
   // Folded blocks: view state only, kept per stage for this visit. Tasks are keyed by name, the startup code by ''.
@@ -131,13 +174,16 @@ export function createEditor(root, L, get, changed) {
       const hoist = u.kind === 'task' && u.code.length && u.code[0].op === 'wdtAdd';
       const fo = folded.has(u.name), n = u.code.length;
       h += `<div class="unit${fo ? ' folded' : ''}" data-u="${ui}" style="--uc:${col}"><div class="uh">${foldBtn(u.name, esc(u.name))}${head}${fresh}${fo ? `<span class="tip sum" title="${esc(brief(u))}">${u.kind === 'task' ? `prio ${u.prio} · stack ${u.stack} B · ` : ''}${n} line${n === 1 ? '' : 's'}: ${esc(brief(u))}</span>` : ''}<span class="sp"></span>${u.locked ? '' : u.kind === 'task' ? '<button class="ib" data-act="delunit">delete</button>' : ''}</div>
-        <div class="ub"><div class="fr">${hoist ? open.replace(/\n  for \(;;\) \{$/, '') : open}</div><ol class="lines">${u.code.map((ins, li) => `<li data-l="${li}"><span class="tx">${line(ins, dis)}</span>${u.locked ? '' : '<button class="ib" data-act="up" aria-label="Move up">↑</button><button class="ib" data-act="down" aria-label="Move down">↓</button><button class="ib" data-act="del" aria-label="Delete line">✕</button>'}</li>${hoist && li === 0 ? '<li class="loopopen" aria-hidden="true">  for (;;) {</li>' : ''}`).join('')}</ol>
+        <div class="ub"><div class="fr">${hoist ? open.replace(/\n  for \(;;\) \{$/, '') : open}</div><ol class="lines">${u.code.map((ins, li) => `<li data-l="${li}"${ins.op === 'fsm' ? ' class="fsmli"' : ''}><span class="tx">${line(ins, dis)}</span>${u.locked || ins.op === 'fsm' ? '' : '<button class="ib" data-act="up" aria-label="Move up">↑</button><button class="ib" data-act="down" aria-label="Move down">↓</button><button class="ib" data-act="del" aria-label="Delete line">✕</button>'}</li>${hoist && li === 0 ? '<li class="loopopen" aria-hidden="true">  for (;;) {</li>' : ''}`).join('')}</ol>
         ${u.locked ? '' : `<div class="addrow"><select data-add aria-label="Add an instruction"><option value="">+ add instruction…</option>${addOpts}</select></div>`}
         <div class="fr">${u.kind === 'task' ? '  }\n}' : '}'}</div></div></div>`;
     });
-    root.innerHTML = h; mark();
+    root.innerHTML = h; mark(); fsmState(curState);
   }
 
+  // the state the machine is in at the playback cursor (null before a run): lights its box in the diagram and its case in the switch
+  let curState = null;
+  function fsmState(st) { curState = st; root.querySelectorAll('.fn-node').forEach(n => n.classList.toggle('cur', n.dataset.node === st)); root.querySelectorAll('.fcase').forEach(n => n.classList.toggle('cur', n.dataset.st === st)); }
   // Where the next "+ add instruction" goes, per unit: an index into its code, or undefined for the end.
   let at = {};
   const mark = () => root.querySelectorAll('.unit[data-u]').forEach(un => {
@@ -154,6 +200,7 @@ export function createEditor(root, L, get, changed) {
     if (el.dataset.add !== undefined) { if (el.value) { const ui = +uEl.dataset.u, pos = Math.min(at[ui] === undefined ? u.code.length : at[ui], u.code.length); const fnName = el.value.startsWith('call:') ? el.value.slice(5) : '', ins = defIns(fnName ? 'call' : el.value); if (!ins) return; if (fnName && F[fnName]) ins.fn = fnName; u.code.splice(pos, 0, ins); at[ui] = pos + 1; changed(); draw(); } return; }
     if (el.dataset.uk) { const k = el.dataset.uk, was = u.name; u[k] = k === 'name' ? (el.value.replace(/[^A-Za-z0-9_]/g, '') || 'task') : +el.value || 0; if (k === 'name' && folded.delete(was)) folded.add(u.name); changed(); if (k === 'name') redraw(); return; }
     const li = el.closest('li');
+    if (li && el.dataset.fk) { const r = (u.code[+li.dataset.l].rows || [])[+el.closest('[data-r]').dataset.r]; if (r) { r[el.dataset.fk] = el.value; changed(); draw(); } return; }
     if (li && el.dataset.k === 'fn' && el.value.startsWith('op:')) { const ins = defIns(el.value.slice(3)); if (ins) { u.code[+li.dataset.l] = ins; changed(); } draw(); return; }
     if (li && el.dataset.k) { const ins = u.code[+li.dataset.l], k = el.dataset.k; ins[k] = (k === 'ms' || k === 'to') ? (+el.value || 0) : el.value; changed(); if (k === 'fn' || k === 'pin' || k === 'v' || k === 'g' || k === 'mode' || k === 'clear') redraw(); }
   };
@@ -163,6 +210,11 @@ export function createEditor(root, L, get, changed) {
     const b = e.target.closest('[data-act]');
     // clicking a line makes it the place where the next new instruction goes (right after it)
     if (!b) { const li = e.target.closest('ol.lines li[data-l]'), un = li && li.closest('.unit[data-u]'); if (un) { at[+un.dataset.u] = +li.dataset.l + 1; mark(); } return; }
+    if (b.dataset.act === 'fsmadd' || b.dataset.act === 'fsmdel') { // a transition row of the state machine table
+      const un = b.closest('.unit'), ins = get().units[+un.dataset.u].code[+b.closest('li').dataset.l], rows = ins.rows = ins.rows || [];
+      if (b.dataset.act === 'fsmdel') rows.splice(+b.closest('[data-r]').dataset.r, 1);
+      else { const st = b.dataset.s, used = rows.filter(r => r.s === st).map(r => r.e), e = L.fsm.events.find(x => !used.includes(x)) || L.fsm.events[0]; let k = rows.length; for (let i = 0; i < rows.length; i++) if (rows[i].s === st) k = i + 1; rows.splice(k, 0, { s: st, e, a: '', n: st }); }   /* a new row starts as "stay": the player decides what it does */
+      changed(); draw(); return; }
     if (b.dataset.act === 'fold') { const un = b.closest('.unit'), key = un.dataset.u === undefined ? '' : get().units[+un.dataset.u].name; if (!folded.delete(key)) folded.add(key); draw(); return; }
     // the cross on an xTaskCreate() line removes the whole task, so it asks once more (the same as "delete" on the task function)
     if (b.dataset.act === 'deltask') { if (b.dataset.arm) { get().units.splice(+b.closest('.ln').dataset.u, 1); at = {}; changed(); draw(); } else { b.dataset.arm = 1; b.textContent = 'delete task? click again'; setTimeout(() => { if (b.isConnected) { delete b.dataset.arm; b.textContent = '✕'; } }, 4000); } return; }
@@ -188,7 +240,7 @@ export function createEditor(root, L, get, changed) {
   const focusNew = () => { const t = root.querySelector('.unit[data-u] .newtag'); if (t) t.closest('.unit').scrollIntoView({ block: 'start' }); };
   setTimeout(focusNew, 0);
   return {
-    draw, focusNew,
+    draw, focusNew, fsmState,
     addTask,
     /** hide the code of every task function (the startup code stays open: it is the task list), or show everything again */
     foldAll(on) { folded.clear(); if (on) get().units.forEach(u => folded.add(u.name)); draw(); },

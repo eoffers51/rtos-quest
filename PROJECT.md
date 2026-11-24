@@ -40,6 +40,7 @@ Dependency direction: `kernel` ← `lessons` ← `main`; `timeline`, `editor`, `
 - **Program**: `{ objs: { name: {type, ...} }, units: [ {kind: 'task'|'isr'|'timer', name, prio, stack, core, code: [instruction]} ] }`. Plain JSON, saved in `localStorage` and handed from stage to stage.
 - **Instruction**: `{ op, ... }`. The list of ops is `OPS` in `tools/verify.js`. Each op needs: execution in `kernel.js`, a rendering in `editor.js` (`line()`), a default in `defaultInstruction()`, and an entry in `OPS`.
 - **Run result `K`** from `runSim(L, prog)`: `K.ev` (events), `K.w` (world facts: starts and ends of rover functions, lock order, bits set, reports), `K.stats`, `K.m` (cpu, ram, average current), `K.crash` (`{t, msg, unit}`), `K.units[].tr` (per-millisecond state: 1 running, 2 ready, 3 blocked on object, 4 ran under 1 ms, 5 blocked on delay, 6 deep sleep), `K.coreTr`.
+- **State machine instruction** (side mission 102): `{ op: 'fsm', rows: [{ s, e, a, n }] }`, a table of transitions that the editor draws as a `switch (state)`. It is not in `OPS` because the player cannot add one; the starting code carries it. See "State machines" in the lesson contract.
 - **Lesson object**: see `.claude/skills/build-stage/reference/lesson-contract.md`. The key functions are `start(prev)`, `solution()`, `check(K)` (one row per goal), `evidence(K)`, `diagnose(K, res)`, plus the declared `wrong` and `alts` cases.
 
 ### Stage file set
@@ -133,5 +134,6 @@ Do not do without a decision from the owner: add a build step or npm dependencie
 - The complete ESP-IDF example of each stage has never been compiled with a real toolchain.
 - The phone layout has been checked for stage 1 only.
 - `tools/diagrams.sh` measures widgets in their starting state only; `H.theory()` in the page covers the other control values.
+- Side mission 102 has a fixed set of states, events and actions; the player edits transitions only. Adding or renaming states in the editor is not built.
 - No automated test plays a stage with a non-reference firmware. A second verifier pass with "player-like" firmware (lights at priority 1, stacks with margins, renamed tasks) would catch the class of problems found by hand in stages 5, 12 and 14.
 - Two cells of the wake-up source table in the side mission (ext1 and ULP needing the RTC peripherals only when used) were not checked line by line against the ESP-IDF sleep documentation.

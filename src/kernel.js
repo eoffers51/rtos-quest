@@ -9,6 +9,11 @@ const PWR={run:40,idle:25,wifi:80,tx:50,light:0.8,deep:0.01},BOOT=30;
 const wt=ms=>({op:'wakeTimer',ms}),ds=()=>({op:'deepSleep'});
 // direct-to-task notifications, event groups, task watchdog
 const ng=t=>({op:'notifyGive',task:t}),ngi=t=>({op:'notifyGiveISR',task:t}),nt=(to=-1,clear=1)=>({op:'notifyTake',to,clear}),es=(gr,bit)=>({op:'evSet',g:gr,bit}),ew=(gr,mode,to=-1)=>({op:'evWait',g:gr,mode,to}),wa=()=>({op:'wdtAdd'}),wr=()=>({op:'wdtReset'});
+// state machine: one instruction that looks up (state, event) in a table of rows {s: state, e: event, a: action or '', n: next state}
+const fs=rows=>({op:'fsm',rows}),row=(s,e,a,n)=>({s,e,a:a||'',n});
+// the rover body that the state machine's actions drive (side mission 102): wheels, drill, a latched hazard, samples waiting for a report
+const DRILL=400,rv=K=>K.w.rv||(K.w.rv={motors:false,drill:false,haz:false,done:Infinity,raw:0,mot:[],dr:[],rep:[],smp:[]});
+const drillDown=(K,fn)=>{const v=rv(K);if(v.motors)K.bad(`${fn}() while the wheels are turning: the drill bit snapped`);if(v.haz)K.bad(`${fn}() while the hazard is not cleared`);if(v.drill){K.bad(`${fn}() while the drill is already in the ground`);return false;}v.drill=true;v.dr.push({t:K.t,on:1});return true;};
 const task=(name,prio,code,o={})=>Object.assign({kind:'task',name,prio,stack:4096,core:1,code},o);
 const SAMPLE_T=[];for(let a=0;a<5;a++)for(let i=0;i<5;i++)SAMPLE_T.push(a*500+i*20);
 const busOn=K=>{if(K.w.bus>0){K.w.coll=(K.w.coll||0)+1;K.bad('I2C collision: two transactions on the bus at the same time');}K.w.bus=(K.w.bus||0)+1;},busOff=K=>{K.w.bus--;};
@@ -28,7 +33,13 @@ const F={
  transmit:{wait:45,cost:3,stack:1200,fx:'radio',sig:'transmit(x)',start:(K,r)=>{r.tx=r.x;r.x=null;},
   end:(K,r)=>{if(!r.tx)K.bad('transmit(x) sent an empty packet: x holds no sample');else(K.w.sent=K.w.sent||[]).push(r.tx.id);}},
  i2cReadIMU:{wait:4,cost:1,stack:400,fx:'mast',start:busOn,end:busOff},i2cReadThermo:{wait:7,cost:1,stack:400,fx:'chip',start:busOn,end:busOff},
- stopMotors:{cost:0,stack:100,fx:'stop'},
+ stopMotors:{cost:0,stack:100,fx:'stop',end:K=>{if(K.w.rv){K.w.rv.motors=false;K.w.rv.mot.push({t:K.t,on:0});}}},
+ startMotors:{cost:1,stack:300,fx:'wheel',end:K=>{const v=rv(K);if(v.drill)K.bad('startMotors() while the drill is in the ground: the drill bit snapped');if(v.haz)K.bad('startMotors() while the hazard is not cleared: the rover drove on into it');v.motors=true;v.mot.push({t:K.t,on:1});}},
+ startDrill:{cost:1,stack:400,fx:'arm',waitTxt:'returns at once, DRILL_DONE arrives '+DRILL+' ms later',end:K=>{if(drillDown(K,'startDrill'))rv(K).done=K.t+DRILL;}},
+ retractDrill:{cost:1,stack:200,fx:'arm',end:K=>{const v=rv(K);if(v.drill){v.drill=false;v.dr.push({t:K.t,on:0,abort:1});}v.done=Infinity;}},
+ drillSample:{wait:DRILL,cost:1,stack:400,fx:'arm',waitTxt:'blocks '+DRILL+' ms until the drill is back up',start:K=>{rv(K).blk=drillDown(K,'drillSample');},
+  end:K=>{const v=rv(K);if(v.blk&&v.drill){v.drill=false;v.dr.push({t:K.t,on:0});v.raw++;v.smp.push(K.t);K.post('DRILL_DONE');}}},
+ sendReport:{cost:3,stack:1100,fx:'radio',end:K=>{const v=rv(K);if(v.raw>0){v.raw--;v.rep.push(K.t);}else K.bad('sendReport() with no new sample: an empty report was sent');}},
  logToFlash:{wait:20,cost:4,stack:1400,fx:'chip',noIsr:"Guru Meditation Error: Core 0 panic'ed (Cache disabled but cached memory region accessed). A flash write was started inside an ISR."},
  deployAntenna:{cost:0,stack:100,end:K=>K.push('ant',{v:1})},handlePacket:{cost:3,stack:900,fx:'radio'},stowAntenna:{cost:0,stack:100,end:K=>K.push('ant',{v:0})},
  positionArm:{wait:12,cost:1,stack:500,needs:['arm_mtx'],fx:'arm'},photograph:{wait:30,cost:2,stack:900,needs:['arm_mtx','cam_mtx'],fx:'cam'},
@@ -73,6 +84,10 @@ function runSim(L,prog){
   const trigger=n=>{const r=byName(n);if(!r)return;r.pend++;if(r.state==='idle'){r.state='ready';r.pc=0;r.act=0;}};
   K.irq=n=>{(K.w.irq[n]=K.w.irq[n]||[]).push(K.t);K.mark('irq:'+n);K.push('fx',{id:n==='onBump'?'bump':'radio'});trigger(n);};
   const wake=o=>{let b=null;for(const r of K.units)if(r.state==='wait'&&r.obj===o&&(!b||r.prio>b.prio))b=r;if(b){b.state='ready';b.obj=null;}return !!b;};
+  // an event for the state machine: put into its queue as an ISR or another task would do it
+  K.post=ev=>{const q=K.objs[L.fsm&&L.fsm.queue];(K.w.evs=K.w.evs||[]).push({t:K.t,ev});K.mark('ev');K.log(`event ${ev}`,'d');if(!q)return;
+    if(q.items.length<q.len){q.items.push({ev,t:K.t});wake(q);}else{(K.w.evLost=K.w.evLost||[]).push({t:K.t,ev});K.bad(`event queue full: ${ev} was dropped`);}};
+  const fsmDone=r=>{if(r.fsmNext!=null){K.w.fsm.state=r.fsmNext;K.push('fsm',{s:r.fsmNext});r.fsmNext=null;}};
   const block=(r,o,to)=>{if(to===0){r.dl=null;r.pc=0;K.stats.timeouts++;return r.prog?(r.prog=false,'cont'):'tick';}
     if(r.dl==null)r.dl=to<0?Infinity:K.t+to;r.state='wait';r.obj=o;r.prog=true;
     if(o.type==='mutex'&&o.owner&&o.owner.prio<r.prio)o.owner.prio=r.prio;return 'resched';};
@@ -84,11 +99,18 @@ function runSim(L,prog){
   function step1(r){
     for(let n=0;n<80;n++){
       if(K.crash)return 'tick';
-      if(r.busy>0){r.busy--;r.act++;if(r.busy===0){if(r.cur)fnEnd(r.curName,r.cur,r,K.t+1);r.cur=null;r.pc++;}return 'tick';}
+      if(r.busy>0){r.busy--;r.act++;if(r.busy===0){if(r.cur){fnEnd(r.curName,r.cur,r,K.t+1);fsmDone(r);}r.cur=null;r.pc++;}return 'tick';}
       if(r.pc>=r.code.length){
         if(r.kind!=='task'){if(r.kind==='isr')K.stats.isrMax=Math.max(K.stats.isrMax,r.act);r.act=0;r.pend--;r.pc=0;if(r.pend>0)continue;r.pend=0;r.state='idle';return 'resched';}
         r.pc=0;if(!r.prog||!r.code.length)return 'tick';r.prog=false;continue;}
-      const ins=r.code[r.pc],op=ins.op;
+      let ins=r.code[r.pc],op=ins.op;
+      if(op==='fsm'){ // dispatch: find the row for (current state, received event); its action then runs as an ordinary call and the state changes when it returns
+        const M=L.fsm||{init:'?'},fw=K.w.fsm=K.w.fsm||{state:M.init,tr:[]};
+        if(r.phase===0){const x=r.x;r.x=null;if(!x||!x.ev){r.pc++;continue;}
+          const w=(ins.rows||[]).find(q=>q.s===fw.state&&q.e===x.ev);fw.tr.push({t:K.t,tq:x.t,from:fw.state,ev:x.ev,to:w?w.n:fw.state,act:w?w.a||'':'',hit:!!w,unit:r.name});
+          if(!w){K.log(`state ${fw.state}: no transition for ${x.ev}, event ignored`,'d');r.pc++;continue;}
+          r.fsmNext=w.n;r.fsmFn=w.a;if(!w.a||!F[w.a]){fsmDone(r);r.pc++;continue;}}
+        ins={op:'call',fn:r.fsmFn};op='call';}
       if(r.ctx==='isr'&&API[op]){K.die(`${API[op]}() was called inside an ISR. An ISR can never block: only the ...FromISR() functions are allowed there.`);return 'tick';}
       if(r.ctx==='timer'&&(op==='delay'||op==='until'||((op==='take'||op==='send'||op==='recv'||op==='notifyTake'||op==='evWait')&&ins.to!==0))){K.die(`${API[op]}() tried to block inside a timer callback. Callbacks run in the timer service task, which must never wait.`);return 'tick';}
       const o=K.objs[ins.s||ins.q||ins.tm||ins.g];
@@ -108,7 +130,7 @@ function runSim(L,prog){
             if(w>0){if(r.ctx!=='task'){K.die(`${ins.fn}() blocks, and it was called from ${r.ctx==='isr'?'an ISR':'a timer callback'}.`);return 'tick';}
               r.phase=1;r.state='sleep';r.wake=K.t+w;r.prog=true;return 'resched';}}
           r.phase=0;const cst=typeof f.cost==='function'?f.cost(K,r):f.cost;
-          if(cst>0){r.busy=cst;r.cur=f;r.curName=ins.fn;r.prog=true;}else{fnEnd(ins.fn,f,r,K.t);r.pc++;}break;}
+          if(cst>0){r.busy=cst;r.cur=f;r.curName=ins.fn;r.prog=true;}else{fnEnd(ins.fn,f,r,K.t);fsmDone(r);r.pc++;}break;}
         case 'take':
           if(o.type==='mutex'){if(o.owner===null){for(const h of r.held)(K.w.lockOrder=K.w.lockOrder||[]).push({t:K.t,unit:r.name,first:h.name,then:o.name});o.owner=r;r.held.push(o);r.dl=null;r.pc++;}else{const b=block(r,o,ins.to);if(b!=='cont')return b;}}
           else if(o.count>0){o.count--;o.holder=r;r.dl=null;r.pc++;}else{const b=block(r,o,ins.to);if(b!=='cont')return b;}break;
@@ -167,6 +189,9 @@ function runSim(L,prog){
       K.deep=null;
     }
     for(const n in L.irqs||{})if(L.irqs[n].includes(t))K.irq(n);
+    if(L.fsm){const v=rv(K); // scripted commands and sensor events, and the drill reporting that it has finished
+      for(const e of L.fsm.script)if(e.t===t){if(e.ev==='HAZARD'){v.haz=true;(v.hz=v.hz||[]).push(t);}if(e.ev==='CMD_RESUME')v.haz=false;K.post(e.ev);}
+      if(v.done<=t){v.done=Infinity;v.drill=false;v.dr.push({t,on:0});v.raw++;v.smp.push(t);K.post('DRILL_DONE');}}
     for(const n in K.objs){const o=K.objs[n];if(o.type==='timer'&&o.active&&o.expiry<=t){trigger(o.cb);K.mark('tmr:'+n);if(o.auto)o.expiry+=Math.max(1,o.period);else o.active=false;}}
     for(const r of K.units){if(r.state==='sleep'&&r.wake<=t)r.state='ready';else if(r.state==='wait'&&r.dl!==Infinity&&r.dl<=t){r.state='ready';r.obj=null;r.dl=null;r.pc=0;K.stats.timeouts++;}}
     const ran=new Set();
@@ -211,4 +236,4 @@ const gapsOf=a=>a.slice(1).map((x,i)=>x-a[i]);
 const SPARE=256,leanRam=K=>K.m.ram-K.units.filter(u=>u.kind==='task').reduce((a,u)=>a+Math.max(0,Math.min(u.stack-u.hw,SPARE)),0);
 const B=(cpu,ram)=>[{label:`Efficient: CPU load at most ${cpu}%`,ok:K=>K.m.cpu<=cpu},{label:`Lean: at most ${ram} bytes of RAM, not counting up to ${SPARE} B of spare stack per task`,ok:K=>leanRam(K)<=ram}];
 const BUMPS=[150,420,425,900,1300,1304,1308,1700],PKTS=[100,180,260,340,1200,1290,1380,2100,2150],PKT_LAST=[340,1380,2150];
-export {ng,ngi,nt,es,ew,wa,wr,PWR,BOOT,wt,ds,BASE,WDT,g,d,un,bz,c,tk,gv,gi,sn,rc,si,trs,tst,task,F,fnInfo,runSim,S_,E_,maxGap,late,pinT,gapsOf,B,leanRam,SPARE};
+export {fs,row,DRILL,ng,ngi,nt,es,ew,wa,wr,PWR,BOOT,wt,ds,BASE,WDT,g,d,un,bz,c,tk,gv,gi,sn,rc,si,trs,tst,task,F,fnInfo,runSim,S_,E_,maxGap,late,pinT,gapsOf,B,leanRam,SPARE};

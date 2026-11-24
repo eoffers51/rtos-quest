@@ -3,6 +3,7 @@ import { lesson as firstLight } from './first-light.js';
 import { lesson as wheelsAndEyes } from './wheels-and-eyes.js';
 import { lesson as steadyPulse } from './steady-pulse.js';
 import { lesson as martianNight } from './martian-night.js';
+import { lesson as modeControl } from './mode-control.js';
 import { lesson as everyByteCounts } from './every-byte-counts.js';
 import { lesson as sciencePipeline } from './science-pipeline.js';
 import { lesson as oneBusTwoMasters } from './one-bus-two-masters.js';
@@ -20,7 +21,7 @@ export const LESSONS = [firstLight, wheelsAndEyes, steadyPulse, everyByteCounts,
 
 /** Side missions: stand-alone stages on other topics (ids from 101). They do not inherit firmware and are always open.
  *  A side lesson sets `side: true` and carries its own `adds` text for the build log. */
-export const SIDE = [martianNight];
+export const SIDE = [martianNight, modeControl];
 
 /** The whole planned journey. `adds` is what the rover gains, `topic` what you learn to make it work. */
 export const JOURNEY = [
